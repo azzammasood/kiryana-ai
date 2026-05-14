@@ -1,0 +1,9 @@
+# KiryanaAI — ai_voice runtime (official Gemini SDK; replaces deprecated google-generativeai)
+google-genai>=1.0.0
+pydantic>=2.0
+
+# CLI convenience (loads .env for GEMINI_API_KEY)
+python-dotenv>=1.0.0
+
+# Development
+pytest>=7.0

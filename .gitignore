@@ -1,0 +1,57 @@
+# --- Secrets & local environment (never commit keys) ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Test & quality tooling ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+.tox/
+.nox/
+
+# --- IDE & editors ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Audio / voice clips (local testing; keep out of git) ---
+clips/
+recordings/
+media/
+samples/
+/*.ogg
+/*.mp3
+/*.wav
+/*.m4a
+/*.flac
