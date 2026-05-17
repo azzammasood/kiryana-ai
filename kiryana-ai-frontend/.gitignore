@@ -1,0 +1,114 @@
+# =========================================================================
+# Miscellaneous & OS-specific files
+# =========================================================================
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.DS_Store?
+._*
+Thumbtack.db
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# =========================================================================
+# IDEs and Editors
+# =========================================================================
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+.idea_modules/
+
+# VS Code related
+.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# =========================================================================
+# Flutter / Dart / Pub related
+# =========================================================================
+**/doc/api/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication and Obfuscation
+app.*.symbols
+app.*.map.json
+
+# =========================================================================
+# Android-specific files
+# =========================================================================
+/android/app/debug
+/android/app/profile
+/android/app/release
+**/android/local.properties
+**/android/key.properties
+**/android/app/src/main/assets/
+*.apk
+*.ap_
+*.aab
+
+# Keystores & signing keys (never commit these)
+*.jks
+*.keystore
+*.p12
+*.pem
+
+# =========================================================================
+# iOS/macOS-specific files
+# =========================================================================
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/GeneratedPluginRegistrant.h
+**/ios/Flutter/GeneratedPluginRegistrant.m
+**/ios/Pods/
+**/ios/.symlinks/
+XcodeAndAppStoreSecrets.xml
+
+# macOS desktop builds
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedXcodeConfig.xcconfig
+**/macos/Flutter/flutter_export_environment.sh
+
+# User-specific Xcode settings
+xcuserdata/
+
+# =========================================================================
+# Windows/Linux Desktop-specific files
+# =========================================================================
+# Windows
+**/windows/flutter/ephemeral/
+**/windows/CMakeLists.txt.user
+
+# Linux
+**/linux/flutter/ephemeral/
+
+# =========================================================================
+# Secrets and Environment Variables
+# =========================================================================
+.env
+.env.*
+*.env
+secrets.json
+

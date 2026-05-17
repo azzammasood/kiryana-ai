@@ -1,0 +1,434 @@
+You are a senior Flutter architect and frontend engineer.
+
+I am building a production-level Flutter mobile application called "KiryanaAI".
+
+This app is for small kiryana (grocery) store owners in Pakistan.
+
+The app workflow is:
+
+1. User records voice in Urdu
+2. AI converts speech to text
+3. Backend extracts transaction info
+4. App shows:
+   - expense logs
+   - sales logs
+   - weekly profit/loss
+   - AI-generated insights
+   - recommendations
+
+IMPORTANT:
+For now, backend is NOT ready.
+So build the frontend using MOCK DATA and clean architecture in such a way that later backend APIs can be connected easily WITHOUT rewriting UI logic.
+
+I am the frontend developer in a team environment.
+
+====================================================
+TECH REQUIREMENTS
+====================================================
+
+Use:
+- Flutter
+- Dart
+- Riverpod (state management)
+- GoRouter (navigation)
+- Dio (future API handling)
+- Clean Architecture
+- Responsive UI
+- Modular feature-based folder structure
+
+====================================================
+PROJECT STRUCTURE
+====================================================
+
+Create scalable professional architecture like:
+
+lib/
+├── core/
+│   ├── constants/
+│   ├── theme/
+│   ├── services/
+│   ├── utils/
+│   ├── widgets/
+│
+├── features/
+│   ├── dashboard/
+│   ├── voice_input/
+│   ├── transactions/
+│   ├── insights/
+│
+├── data/
+│   ├── models/
+│   ├── repositories/
+│   ├── mock/
+│
+├── routes/
+├── main.dart
+
+====================================================
+IMPORTANT ARCHITECTURE RULE
+====================================================
+
+DO NOT hardcode mock data directly inside UI screens.
+
+Instead:
+
+- Create models
+- Create repositories
+- Create mock data sources
+- UI should consume repositories only
+
+Example:
+
+UI Screen
+   ↓
+Provider/ViewModel
+   ↓
+Repository
+   ↓
+Mock Data Source
+
+Later I should be able to replace:
+
+MockRepository()
+
+with:
+
+ApiRepository()
+
+without changing UI screens.
+
+====================================================
+SCREENS TO BUILD
+====================================================
+
+1. Splash Screen
+2. Onboarding Screen
+3. Dashboard Screen
+4. Voice Recording Screen
+5. Expense/Sales Log Screen
+6. Transaction Details Screen
+7. Weekly Insights Screen
+8. Notifications Screen
+9. Profile Screen
+
+====================================================
+DASHBOARD REQUIREMENTS
+====================================================
+
+Dashboard should display:
+
+- Weekly Profit
+- Total Sales
+- Total Expenses
+- Top Selling Products
+- AI Insight Cards
+- Charts/Graphs
+- Recent Transactions
+
+Use realistic Pakistani kiryana store mock data.
+
+====================================================
+VOICE SCREEN REQUIREMENTS
+====================================================
+
+Build:
+
+- microphone button
+- waveform animation
+- recording state
+- fake transcription output using mock data
+
+Example transcript:
+"Aaj 3 kilo atta 500 rupay mein becha"
+
+Do NOT implement real AI yet.
+Use mock simulation architecture.
+
+====================================================
+TRANSACTION SCREEN
+====================================================
+
+Show:
+- item name
+- amount
+- type
+- date
+- category
+
+Include:
+- filtering
+- search
+- tabs for sales/expenses
+
+====================================================
+INSIGHTS SCREEN
+====================================================
+
+Show AI cards like:
+
+- "Friday sales are dropping"
+- "Sugar sales increased 12%"
+- "Consider reducing atta stock"
+
+These should come from mock repository data.
+
+====================================================
+DESIGN REQUIREMENTS
+====================================================
+
+Design should be:
+- modern
+- clean
+- minimal
+- premium
+- Urdu-friendly
+- large readable typography
+- smooth animations
+- card-based layout
+
+Use:
+- proper spacing
+- reusable widgets
+- custom theme
+- dark/light support
+
+====================================================
+API READY REQUIREMENTS
+====================================================
+
+Prepare architecture for future backend integration.
+
+Create:
+- ApiService class
+- Endpoint constants
+- Repository interfaces
+- DTO models
+
+Even if APIs are not connected yet.
+
+====================================================
+MOCK DATA REQUIREMENTS
+====================================================
+
+Create separate mock JSON or Dart mock files.
+
+Do NOT hardcode inside widgets.
+
+====================================================
+OUTPUT REQUIREMENTS
+====================================================
+
+Generate:
+- complete Flutter frontend architecture
+- all screens
+- reusable widgets
+- providers
+- repositories
+- models
+- mock data
+- routing setup
+- theme setup
+- navigation flow
+
+The app should run properly using mock data.
+
+
+====================================================
+RESPONSIVE + FIGMA IMPLEMENTATION REQUIREMENTS
+====================================================
+
+The app MUST be fully responsive and adaptive across all screen sizes.
+
+The UI should work properly on:
+
+- Android phones
+- iPhones
+- Tablets
+- Chrome browser
+- Large desktop/widescreen displays
+- Flutter Web
+
+IMPORTANT:
+Do NOT build only mobile-sized layouts.
+
+Use responsive Flutter techniques such as:
+- LayoutBuilder
+- MediaQuery
+- Expanded/Flexible
+- Wrap
+- Responsive grids
+- Adaptive spacing
+- Breakpoints
+
+The UI should scale professionally on widescreen displays instead of stretching awkwardly.
+
+====================================================
+FIGMA MATCHING REQUIREMENTS
+====================================================
+
+Later I will provide screenshots/images from Figma designs.
+
+When I provide a Figma screenshot:
+
+- recreate the UI as closely as possible
+- match layout
+- spacing
+- typography
+- hierarchy
+- cards
+- buttons
+- sections
+- structure
+
+The implementation should look production-level and visually accurate.
+
+====================================================
+IMAGE PLACEHOLDER REQUIREMENTS
+====================================================
+
+For now:
+DO NOT use real images.
+
+Instead:
+- use numbered placeholders
+- use mock containers/cards
+- use placeholder avatars
+- use numbered boxes like:
+  [Image 1]
+  [Banner 2]
+  [Product 3]
+
+Example:
+A product card should temporarily display:
+"Product Image 1"
+
+instead of real images.
+
+Later I will provide:
+- images
+- icons
+- assets
+- illustrations
+
+inside:
+- assets/
+or
+- public/
+
+and the architecture should make replacing placeholders very easy.
+
+====================================================
+PLACEHOLDER SYSTEM REQUIREMENTS
+====================================================
+
+Create reusable placeholder widgets/components.
+
+Example:
+- PlaceholderImageWidget
+- PlaceholderBanner
+- PlaceholderAvatar
+
+These should support:
+- custom size
+- border radius
+- labels/numbers
+
+====================================================
+RESPONSIVE DESIGN EXPECTATIONS
+====================================================
+
+Desktop/Widescreen:
+- centered layouts
+- max-width containers
+- proper spacing
+- multi-column sections where appropriate
+
+Mobile:
+- stacked layouts
+- touch-friendly spacing
+- readable typography
+
+Tablet:
+- adaptive hybrid layouts
+
+====================================================
+UI QUALITY REQUIREMENTS
+====================================================
+
+The app should feel like:
+- a real startup product
+- polished
+- smooth
+- premium
+- modern SaaS/mobile UI
+
+Avoid:
+- beginner Flutter UI
+- oversized widgets
+- poor spacing
+- inconsistent padding
+- stretched layouts
+
+Use:
+- reusable design system
+- spacing constants
+- theme constants
+- scalable typography
+- reusable cards/components
+
+====================================================
+IMPORTANT
+====================================================
+
+The generated frontend should be easy to:
+- scale
+- maintain
+- connect with backend
+- replace placeholders with real assets
+- integrate with Figma updates
+
+
+====================================================
+IMPORTANT WORKFLOW INSTRUCTION
+====================================================
+
+DO NOT start generating the app yet.
+
+This prompt is ONLY the master blueprint, architecture guide, and development ruleset that must be followed throughout the entire project.
+
+In the NEXT prompts, I will provide:
+- Figma screenshots
+- UI references
+- screen designs
+- assets
+- feature-specific instructions
+
+You must remember and follow ALL architecture, responsiveness, scalability, placeholder, and clean-code requirements defined in this blueprint for every future screen and feature.
+
+Wait for my next prompt before generating code.
+
+When I provide UI screenshots later:
+- implement them exactly
+- follow this architecture
+- maintain responsiveness
+- use placeholders instead of real assets unless assets are provided
+- keep everything backend-ready
+
+This blueprint acts as the permanent frontend development standard for the project.
+
+
+====================================================
+IMPORTANT
+====================================================
+
+Code should look like production-level startup codebase.
+
+Focus on:
+- scalability
+- maintainability
+- clean separation
+- future backend integration
+- team collaboration
+- reusable components
+
+Explain every important architectural decision clearly.
