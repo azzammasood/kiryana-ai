@@ -35,8 +35,8 @@ def detect_slow_day(daily_totals: list[dict], threshold: float = 0.70) -> list[d
                 "item": None,
                 "weekday": d["weekday_name"],
                 "weekday_num": d["weekday_num"],
-                "message": f"{d['weekday_name']} ko bikri hamesha kam rehti hai "
-                           f"(avg Rs. {d['avg_sales']:.0f} vs mean Rs. {overall_mean:.0f})",
+                "message": f"{d['weekday_name']} کو فروخت ہمیشہ کم رہتی ہے "
+                           f"(اوسط Rs. {d['avg_sales']:.0f} بمقابلہ Rs. {overall_mean:.0f})",
                 "severity": "medium",
             })
     return patterns
@@ -60,8 +60,8 @@ def detect_margin_shrink(item_summary: list[dict], shrink_threshold: float = 0.1
                 "type": "margin_shrink",
                 "item": item["item_name"],
                 "weekday": None,
-                "message": f"{item['item_name']} ka margin ghat raha hai "
-                           f"(margin: {item['margin']*100:.1f}%, avg: {avg_margin*100:.1f}%)",
+                "message": f"{item['item_name']} کا منافع کم ہو رہا ہے "
+                           f"(منافع: {item['margin']*100:.1f}%، اوسط: {avg_margin*100:.1f}%)",
                 "severity": "high" if pct >= 20 else "medium",
             })
     return patterns
@@ -77,8 +77,8 @@ def detect_top_seller(item_summary: list[dict]) -> list[dict]:
         "type": "top_seller",
         "item": top["item_name"],
         "weekday": None,
-        "message": f"{top['item_name']} is hafte sab se ziada bika "
-                   f"(Rs. {top['revenue']:.0f}, {top['qty_sold']:.0f} units)",
+        "message": f"{top['item_name']} اس ہفتے سب سے زیادہ بکا "
+                   f"(Rs. {top['revenue']:.0f}، {top['qty_sold']:.0f} یونٹ)",
         "severity": "low",
     }]
 
@@ -91,7 +91,7 @@ def detect_dead_stock(
     Items that were sold before but have zero sales in the current window.
     """
     current_sold = {i["item_name"] for i in current_summary if i["revenue"] > 0}
-    ever_sold = {t["item_name"] for t in all_transactions if t["type"] == "sale"}
+    ever_sold = {t["item_name"] for t in all_transactions if t["transaction_type"] == "sale"}
     dead = ever_sold - current_sold
 
     return [
@@ -99,7 +99,7 @@ def detect_dead_stock(
             "type": "dead_stock",
             "item": item,
             "weekday": None,
-            "message": f"{item} is hafte bilkul nahi bika — stock check karein",
+            "message": f"{item} اس ہفتے بالکل نہیں بکا — اسٹاک چیک کریں",
             "severity": "medium",
         }
         for item in dead
@@ -124,8 +124,8 @@ def detect_sales_spike(daily_totals: list[dict], spike_factor: float = 2.0) -> l
                 "item": None,
                 "weekday": d["weekday_name"],
                 "weekday_num": d["weekday_num"],
-                "message": f"{d['weekday_name']} ko bikri zyada hoti hai "
-                           f"(avg Rs. {d['avg_sales']:.0f}) — yeh mauqa hai",
+                "message": f"{d['weekday_name']} کو فروخت زیادہ ہوتی ہے "
+                           f"(اوسط Rs. {d['avg_sales']:.0f}) — یہ موقع ہے",
                 "severity": "low",
             })
     return patterns

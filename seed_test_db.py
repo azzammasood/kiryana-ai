@@ -11,13 +11,13 @@ DB_PATH = "test.db"
 USER_ID = 1
 
 ITEMS = [
-    ("Atta",       18, 22),   # (item, cost/unit, sell/unit)
-    ("Chawal",     90, 110),
-    ("Chai patti", 400, 500),
-    ("Daal",       120, 150),
-    ("Tel",        300, 360),
-    ("Namak",      50, 60),
-    ("Sugar",      130, 155),
+    ("آٹا",       18, 22),   # (item, cost/unit, sell/unit)
+    ("چاول",      90, 110),
+    ("چائے پتی",  400, 500),
+    ("دال",       120, 150),
+    ("تیل",       300, 360),
+    ("نمک",       50, 60),
+    ("چینی",      130, 155),
 ]
 
 WEEKDAY_MULTIPLIERS = [0.6, 1.0, 1.1, 1.0, 0.5, 1.4, 1.2]  # Sun–Sat
@@ -26,36 +26,68 @@ WEEKDAY_MULTIPLIERS = [0.6, 1.0, 1.1, 1.0, 0.5, 1.4, 1.2]  # Sun–Sat
 def seed():
     conn = sqlite3.connect(DB_PATH)
     conn.executescript("""
+        DROP TABLE IF EXISTS agent_traces;
+        DROP TABLE IF EXISTS insights;
         DROP TABLE IF EXISTS transactions;
         DROP TABLE IF EXISTS users;
-        DROP TABLE IF EXISTS vendors;
 
         CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            phone TEXT
-        );
-
-        CREATE TABLE vendors (
-            id INTEGER PRIMARY KEY,
-            name TEXT
+            id                   INTEGER PRIMARY KEY,
+            phone_number         TEXT UNIQUE,
+            name                 TEXT DEFAULT 'Dukandaar',
+            language             TEXT DEFAULT 'ur',
+            notification_day     TEXT DEFAULT 'Sunday',
+            notification_time    TEXT DEFAULT '10:00',
+            notifications_enabled INTEGER DEFAULT 1,
+            created_at           TEXT DEFAULT (datetime('now'))
         );
 
         CREATE TABLE transactions (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id          INTEGER NOT NULL,
+            item_name        TEXT NOT NULL,
+            quantity         REAL,
+            unit             TEXT,
+            amount           REAL NOT NULL,
+            transaction_type TEXT NOT NULL CHECK(transaction_type IN ('sale', 'expense')),
+            raw_text         TEXT,
+            audio_url        TEXT,
+            date             TEXT NOT NULL,
+            created_at       TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE insights (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id         INTEGER NOT NULL,
+            session_id      TEXT NOT NULL,
+            week_start      TEXT NOT NULL,
+            week_end        TEXT NOT NULL,
+            total_sales     REAL NOT NULL,
+            total_expenses  REAL NOT NULL,
+            profit          REAL NOT NULL,
+            top_items       TEXT,
+            recommendations TEXT,
+            key_insight     TEXT,
+            report_text     TEXT,
+            created_at      TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE agent_traces (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id     INTEGER,
-            date        TEXT,
-            item_name   TEXT,
-            quantity    REAL,
-            unit_price  REAL,
-            total_amount REAL,
-            type        TEXT CHECK(type IN ('sale','expense')),
-            vendor_id   INTEGER
+            user_id     INTEGER NOT NULL,
+            session_id  TEXT NOT NULL,
+            step_number INTEGER NOT NULL,
+            step_label  TEXT NOT NULL,
+            step_detail TEXT,
+            status      TEXT DEFAULT 'success',
+            created_at  TEXT DEFAULT (datetime('now'))
         );
     """)
 
-    conn.execute("INSERT INTO users VALUES (?,?,?)", (USER_ID, "Haji Sahib", "+923001234567"))
-    conn.execute("INSERT INTO vendors VALUES (?,?)", (1, "City Wholesale"))
+    conn.execute(
+        "INSERT INTO users (id, phone_number, name) VALUES (?,?,?)",
+        (USER_ID, "+923001234567", "حاجی صاحب"),
+    )
 
     today = datetime.now()
     rows = []
@@ -63,24 +95,21 @@ def seed():
     for days_back in range(35):
         date = (today - timedelta(days=days_back)).strftime("%Y-%m-%d")
         weekday = (today - timedelta(days=days_back)).weekday()  # Mon=0
-        # map to Sun=0 for multipliers: Mon→1, Tue→2 ... Sun→0
-        sqlite_weekday = (weekday + 1) % 7
+        sqlite_weekday = (weekday + 1) % 7  # Sun=0
         multiplier = WEEKDAY_MULTIPLIERS[sqlite_weekday]
 
         for item_name, cost_u, sell_u in ITEMS:
             if random.random() < 0.15:
-                continue  # occasional missing day per item
+                continue
 
             qty = round(random.uniform(2, 10) * multiplier, 1)
 
-            # expense (purchase from vendor)
-            rows.append((USER_ID, date, item_name, qty, cost_u, qty * cost_u, "expense", 1))
-            # sale
-            rows.append((USER_ID, date, item_name, qty, sell_u, qty * sell_u, "sale", None))
+            rows.append((USER_ID, item_name, qty, "kg", qty * cost_u, "expense", date))
+            rows.append((USER_ID, item_name, qty, "kg", qty * sell_u, "sale",    date))
 
     conn.executemany(
-        "INSERT INTO transactions (user_id,date,item_name,quantity,unit_price,total_amount,type,vendor_id) "
-        "VALUES (?,?,?,?,?,?,?,?)",
+        "INSERT INTO transactions (user_id, item_name, quantity, unit, amount, transaction_type, date) "
+        "VALUES (?,?,?,?,?,?,?)",
         rows,
     )
     conn.commit()
@@ -89,27 +118,51 @@ def seed():
 
 
 def test_pipeline():
-    from ai_insights import run_insight_pipeline
     import json
+    from ai_insights import run_insight_pipeline
 
     result = run_insight_pipeline(user_id=USER_ID, db_path=DB_PATH)
 
     print("\n" + "="*60)
     print("WEEK TOTALS:")
-    print(json.dumps(result["week_totals"], indent=2))
+    print(f"  Sales:    Rs. {result['total_sales']:,.0f}")
+    print(f"  Expenses: Rs. {result['total_expenses']:,.0f}")
+    print(f"  Profit:   Rs. {result['profit']:,.0f}")
+    print(f"  Week:     {result['week_start']} → {result['week_end']}")
+    print(f"  Session:  {result['session_id']}")
 
-    print("\nPATTERNS DETECTED:")
-    for p in result["patterns"]:
-        print(f"  [{p['severity'].upper()}] {p['type']} — {p['message']}")
+    print("\nTOP ITEMS:")
+    for i in result["top_items"]:
+        print(f"  {i['item_name']} — Rs. {i['amount']:,.0f}")
+
+    print("\nKEY INSIGHT:")
+    print(f"  {result['key_insight']}")
 
     print("\nRECOMMENDATIONS:")
     for r in result["recommendations"]:
-        print(f"  ({r['source']}) {r['action_roman_urdu']}")
+        print(f"  • {r}")
 
     print("\nWHATSAPP REPORT:")
-    print("-"*40)
+    print("-"*50)
     print(result["report_text"])
-    print("-"*40)
+    print("-"*50)
+
+    # verify it was saved to DB
+    conn = sqlite3.connect(DB_PATH)
+    saved = conn.execute(
+        "SELECT id, session_id FROM insights WHERE user_id=? ORDER BY id DESC LIMIT 1",
+        (USER_ID,),
+    ).fetchone()
+    traces = conn.execute(
+        "SELECT step_number, step_label, step_detail FROM agent_traces WHERE session_id=? ORDER BY step_number",
+        (result["session_id"],),
+    ).fetchall()
+    conn.close()
+
+    print(f"\nSAVED TO DB: insights.id={saved[0]}")
+    print("AGENT TRACES:")
+    for t in traces:
+        print(f"  [{t[0]}] {t[1]}: {t[2]}")
 
 
 if __name__ == "__main__":

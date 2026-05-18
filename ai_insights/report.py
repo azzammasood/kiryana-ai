@@ -1,6 +1,7 @@
 """
 Weekly profit/loss report generator.
-Produces a WhatsApp-ready Roman Urdu message string.
+Produces a WhatsApp-ready message matching Ahmad's expected report_text format:
+  English header with numbers + Urdu script for insights and recommendations.
 """
 
 from __future__ import annotations
@@ -21,12 +22,12 @@ def generate_report(
     recommendations: list[dict],
 ) -> str:
     """
-    Returns a formatted Roman Urdu WhatsApp message.
+    Returns a formatted WhatsApp message string.
 
-    week_totals  : {"this_week": {"revenue": X, "expenses": Y}, "last_week": {...}}
-    item_summary : list from db.get_item_summary()
-    patterns     : list from patterns.detect_patterns()
-    recommendations: list from recommender.get_recommendations()
+    week_totals    : from db.get_week_totals()
+    item_summary   : from db.get_item_summary()
+    patterns       : from patterns.detect_patterns()
+    recommendations: from recommender.get_recommendations()
     """
     this = week_totals.get("this_week", {})
     last = week_totals.get("last_week", {})
@@ -37,45 +38,41 @@ def generate_report(
 
     last_profit = last.get("revenue", 0) - last.get("expenses", 0)
 
-    # profit trend
+    # profit trend line
     if last_profit > 0:
         change_pct = ((profit - last_profit) / last_profit) * 100
         if change_pct >= 5:
-            trend_line = f"📈 Pichle hafte se {change_pct:.0f}% zyada munafa"
+            trend_line = f"Trend: +{change_pct:.0f}% vs last week"
         elif change_pct <= -5:
-            trend_line = f"📉 Pichle hafte se {abs(change_pct):.0f}% kam munafa"
+            trend_line = f"Trend: {change_pct:.0f}% vs last week"
         else:
-            trend_line = "➡️ Pichle hafte jaisa hi munafa raha"
+            trend_line = "Trend: Similar to last week"
     else:
         trend_line = ""
 
-    # top items section
+    # top items
     top = _top_items(item_summary)
     top_lines = ""
     if top:
-        top_lines = "\n\n🏆 *Sab se ziada bikne wali cheezein:*"
-        for idx, item in enumerate(top, 1):
-            top_lines += f"\n{idx}. {item['item_name']} — {_format_amount(item['revenue'])}"
+        top_lines = "\nTop items: " + ", ".join(
+            f"{i['item_name']} ({_format_amount(i['revenue'])})" for i in top
+        )
 
-    # top insight + recommendation
+    # Urdu insight + recommendation
     insight_line = ""
     rec_line = ""
     if patterns:
-        p = patterns[0]  # highest severity first
-        insight_line = f"\n\n💡 *Insight:* {p['message']}"
+        insight_line = f"\n\nاہم بات: {patterns[0]['message']}"
     if recommendations:
-        r = recommendations[0]
-        rec_line = f"\n✅ *Mashwara:* {r['action_roman_urdu']}"
+        rec_line = f"\nعملی مشورہ: {recommendations[0]['action_urdu']}"
 
-    profit_emoji = "📈" if profit >= 0 else "📉"
-    profit_label = "Munafa" if profit >= 0 else "Nuqsan"
+    profit_label = "Profit" if profit >= 0 else "Loss"
 
     lines = [
-        "📊 *Hafte Ki Report*",
-        "",
-        f"💰 Kamai:   {_format_amount(revenue)}",
-        f"💸 Kharcha: {_format_amount(expenses)}",
-        f"{profit_emoji} {profit_label}: {_format_amount(abs(profit))}",
+        "📊 KiryanaAI Weekly Report",
+        f"Sales:    {_format_amount(revenue)}",
+        f"Expenses: {_format_amount(expenses)}",
+        f"{profit_label}: {_format_amount(abs(profit))}",
     ]
 
     if trend_line:

@@ -11,24 +11,19 @@ import os
 
 _RULES: dict[str, str] = {
     "slow_day": (
-        "Us din stock kam rakhein aur gerech wali cheezein zyada na mangwayein — "
-        "kharcha bachega"
+        "اس دن اسٹاک کم رکھیں اور غیر ضروری خریداری سے بچیں — خرچہ بچے گا"
     ),
     "margin_shrink": (
-        "Is item ki selling price thodi barha dein, ya koi sasta supplier dhundhein — "
-        "margin theek ho jaye ga"
+        "اس چیز کی قیمت تھوڑی بڑھائیں یا سستا سپلائر تلاش کریں — منافع ٹھیک ہو جائے گا"
     ),
     "dead_stock": (
-        "Yeh item filhaal nahi bik raha — jab tak purana stock khatam na ho, "
-        "naya order mat karein"
+        "جب تک پرانا اسٹاک ختم نہ ہو، نیا آرڈر نہ کریں"
     ),
     "top_seller": (
-        "Yeh item acha chal raha hai — stock hamesha available rakhein taake "
-        "sale miss na ho"
+        "اس چیز کا اسٹاک ہمیشہ موجود رکھیں تاکہ فروخت مس نہ ہو"
     ),
     "sales_spike": (
-        "Is din bikri zyada hoti hai — pehle se thoda extra stock rakhein "
-        "aur ready rahein"
+        "اس دن پہلے سے تھوڑا اضافی اسٹاک رکھیں اور تیار رہیں"
     ),
 }
 
@@ -48,21 +43,21 @@ def _gemini_recommendation(pattern: dict) -> str:
         import google.generativeai as genai
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            return "Apne transactions ka jaiza lein aur zaroori qadam uthayen."
+            return "اپنے لین دین کا جائزہ لیں اور ضروری قدم اٹھائیں۔"
 
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-2.0-flash")
 
         prompt = (
-            "Aap ek kiryana store ke liye AI assistant hain. "
-            "Neeche ek business pattern diya gaya hai. "
-            "Ek chhota, kaam ka mashwara Roman Urdu mein dijiye (1 sentence, max 20 words).\n\n"
-            f"Pattern: {pattern['message']}"
+            "آپ ایک کریانہ اسٹور کے لیے AI اسسٹنٹ ہیں۔ "
+            "نیچے ایک بزنس پیٹرن دیا گیا ہے۔ "
+            "ایک چھوٹا، کام کا مشورہ اردو میں دیں (1 جملہ، زیادہ سے زیادہ 20 الفاظ)۔\n\n"
+            f"پیٹرن: {pattern['message']}"
         )
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception:
-        return "Apne transactions ka jaiza lein aur zaroori qadam uthayen."
+        return "اپنے لین دین کا جائزہ لیں اور ضروری قدم اٹھائیں۔"
 
 
 # ── public entry point ────────────────────────────────────────────────────────
@@ -70,7 +65,7 @@ def _gemini_recommendation(pattern: dict) -> str:
 def get_recommendations(patterns: list[dict]) -> list[dict]:
     """
     Returns a list of Recommendation dicts:
-      {pattern_type, item, weekday, action_roman_urdu, source}
+      {pattern_type, item, weekday, action_urdu, source}
     source is "rule" or "gemini".
     """
     recommendations = []
@@ -87,7 +82,7 @@ def get_recommendations(patterns: list[dict]) -> list[dict]:
             "pattern_type": p["type"],
             "item": p.get("item"),
             "weekday": p.get("weekday"),
-            "action_roman_urdu": action,
+            "action_urdu": action,
             "source": source,
         })
     return recommendations
