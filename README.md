@@ -256,9 +256,7 @@ Output build assets are written to `kiryana-ai-frontend\build\web`.
 
 ---
 
-## Submission Documentation Logs
-
-For the hackathon checklist and demo video slots, see **[SUBMISSION.md](./SUBMISSION.md)**.
+## Documentation Logs
 
 To verify our complete implementation of Challenge 1, please review the files in the **`/antigravity/`** directory:
 * **[README.md](./antigravity/README.md)** — Entrypoint index.
