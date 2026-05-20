@@ -7,7 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../settings/providers/profile_provider.dart';
+import '../../../core/providers/language_provider.dart';
 import '../../../core/widgets/animated_topbar_logo.dart';
+import 'how_it_works_dialog.dart';
 
 class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const DashboardAppBar({super.key});
@@ -15,6 +17,7 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
+    final isUrdu = ref.watch(languageProvider).languageCode == 'ur';
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
@@ -60,7 +63,29 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            
+
+            IconButton(
+              onPressed: () => showHowItWorksDialog(context, ref),
+              tooltip: isUrdu ? 'یہ کیسے کام کرتا ہے' : 'How it works',
+              icon: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.white.withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: AppColors.white.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.help_outline_rounded,
+                  color: AppColors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+
             // Profile Picture
             GestureDetector(
               onTap: () => context.go('/settings'),
