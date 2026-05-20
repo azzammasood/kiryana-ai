@@ -394,7 +394,7 @@ class ApiService {
       return cached;
     }
 
-    final insight = await getLatestInsight(userId);
+    var insight = await getLatestInsight(userId);
     try {
       final kpis = await getAdaptationKpis(userId);
       insight = {...insight, 'kpis': kpis};
