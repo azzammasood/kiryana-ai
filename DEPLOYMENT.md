@@ -116,6 +116,7 @@ APK path:
 | Problem | Fix |
 |---------|-----|
 | Web blank / 404 on refresh | Redeploy with `netlify.toml` redirects (included) |
-| API connection failed | APK/web built with wrong `API_BASE_URL`; rebuild with correct Render URL |
+| API connection failed | Web build used `127.0.0.1:8000`. Rebuild: `.\scripts\build_web.ps1 -ApiUrl "https://YOUR-SERVICE.onrender.com"` and redeploy `build/web`. Or edit `web/env.js` on Netlify to your Render URL. |
+| English UI looks right-aligned | Urdu locale forces RTL; store setup is now LTR. Default language is English. |
 | Render very slow first load | Free tier cold start; wait 60s or upgrade temporarily |
 | APK build fails | Run `flutter doctor`; install Android SDK & accept licenses |

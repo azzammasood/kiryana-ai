@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/screens/splash_screen.dart';
 import '../features/onboarding/screens/onboarding_screen.dart';
+import '../features/auth/screens/auth_welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/profile_setup_screen.dart';
@@ -23,6 +24,7 @@ import '../features/settings/screens/change_phone_screen.dart';
 abstract class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
+  static const String auth = '/auth';
   static const String login = '/login';
   static const String otp = '/otp';
   static const String profileSetup = '/profile-setup';
@@ -68,9 +70,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // ── Auth ────────────────────────────────────────────────────
       GoRoute(
+        path: AppRoutes.auth,
+        name: 'auth',
+        builder: (context, state) => const AuthWelcomeScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) {
+          final isSignUp = state.uri.queryParameters['mode'] == 'signup';
+          return LoginScreen(isSignUp: isSignUp);
+        },
       ),
       GoRoute(
         path: AppRoutes.otp,

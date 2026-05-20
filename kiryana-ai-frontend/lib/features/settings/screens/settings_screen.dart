@@ -45,6 +45,91 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await prefs.setBool(key, value);
   }
 
+  Future<void> _showSubscriptionDialog(bool isUrdu) async {
+    final profile = ref.read(profileProvider);
+    final isPremium = profile.isPremium;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            isUrdu ? 'سبسکرپشن' : 'Manage Subscription',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+          content: Text(
+            isPremium
+                ? (isUrdu
+                    ? 'Premium plan active hai. Kya aap free plan par wapas jana chahte hain?'
+                    : 'You are on the Premium plan. Do you want to unsubscribe and switch back to Free?')
+                : (isUrdu
+                    ? 'Free plan active hai. Premium se unlimited AI sessions unlock karein.'
+                    : 'You are on the Free plan. Upgrade to Premium for unlimited AI sessions.'),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                isUrdu ? 'منسوخ' : 'Cancel',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await ref.read(profileProvider.notifier).setPlan(
+                      isPremium ? 'free' : 'premium',
+                    );
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isPremium
+                            ? (isUrdu
+                                ? 'Free plan par switch ho gaya'
+                                : 'Switched to Free plan')
+                            : (isUrdu
+                                ? 'Premium plan activate ho gaya'
+                                : 'Premium plan activated'),
+                      ),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isPremium ? AppColors.error : const Color(0xFFC99922),
+                foregroundColor: AppColors.white,
+              ),
+              child: Text(
+                isPremium
+                    ? (isUrdu ? 'Unsubscribe' : 'Unsubscribe')
+                    : (isUrdu ? 'Upgrade' : 'Upgrade to Premium'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _onNavTap(int index) {
     if (index == _currentIndex) return;
     switch (index) {
@@ -315,12 +400,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: const Color(0xFFC99922),
             iconBgColor: const Color(0xFFFFF4CF),
             showArrow: true,
-            onTap: () async {
-              final profile = ref.read(profileProvider);
-              await ref
-                  .read(profileProvider.notifier)
-                  .setPlan(profile.isPremium ? 'free' : 'premium');
-            },
+            onTap: () => _showSubscriptionDialog(isUrdu),
           ),
           _buildDivider(),
           _buildSettingRow(

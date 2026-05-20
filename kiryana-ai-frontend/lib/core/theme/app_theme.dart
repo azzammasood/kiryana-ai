@@ -102,6 +102,21 @@ abstract class AppTheme {
           fontSize: 14,
           color: AppColors.textHint,
         ),
+        labelStyle: GoogleFonts.inter(
+          fontSize: 14,
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: GoogleFonts.inter(
+          fontSize: 14,
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AppColors.primary,
+        selectionColor: AppColors.primaryLight,
+        selectionHandleColor: AppColors.primary,
       ),
     );
   }
@@ -156,6 +171,23 @@ abstract class AppTheme {
           side: const BorderSide(color: AppColors.darkBorder, width: 1),
         ),
         margin: EdgeInsets.zero,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.darkSurface,
+        labelStyle: GoogleFonts.inter(
+          fontSize: 14,
+          color: AppColors.darkTextSecondary,
+        ),
+        hintStyle: GoogleFonts.inter(
+          fontSize: 14,
+          color: AppColors.darkTextSecondary,
+        ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AppColors.primaryLight,
+        selectionColor: AppColors.primaryLight,
+        selectionHandleColor: AppColors.primaryLight,
       ),
     );
   }

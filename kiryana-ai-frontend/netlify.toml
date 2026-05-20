@@ -1,8 +1,13 @@
-# Use with Netlify Drop: upload kiryana-ai-frontend/build/web after local build.
-# For Git-connected builds, set API_BASE_URL in Netlify UI and use the build command in DEPLOYMENT.md.
+# Git-connected Netlify: set env API_BASE_URL to your Render URL (no trailing slash).
+# Manual Drop: run scripts/build_web.ps1 first, then upload build/web.
 
 [build]
+  base = "kiryana-ai-frontend"
+  command = "flutter pub get && flutter build web --release --dart-define=API_BASE_URL=$API_BASE_URL"
   publish = "build/web"
+
+[build.environment]
+  API_BASE_URL = "https://kiryana-ai-api.onrender.com"
 
 [[redirects]]
   from = "/*"

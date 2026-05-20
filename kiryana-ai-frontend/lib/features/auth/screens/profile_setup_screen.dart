@@ -86,7 +86,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         MediaQuery.of(context).size.width >= AppSpacing.mobileBreakpoint;
     final cardWidth = isWide ? AppSpacing.maxContentWidth : double.infinity;
 
-    return Scaffold(
+    // English-only screen: always LTR (Urdu locale would otherwise mirror fields).
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Scaffold(
       backgroundColor: AppColors.secondary,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
@@ -229,6 +232,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -239,12 +243,29 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    const fieldStyle = TextStyle(
+      color: AppColors.textPrimary,
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+    );
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.left,
+      style: fieldStyle,
+      cursorColor: AppColors.primary,
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+        ),
         prefixIcon: Icon(icon, color: AppColors.primary),
         filled: true,
         fillColor: AppColors.secondary,

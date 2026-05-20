@@ -60,18 +60,21 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
       await ApiService().setCurrentUser(pendingUserId, pendingPhone);
       await prefs.setBool('is_logged_in', true);
+      final authMode = prefs.getString('pending_auth_mode') ?? 'login';
       await prefs.remove('pending_user_id');
       await prefs.remove('pending_phone_number');
-      final hasProfile = await ref
-          .read(profileProvider.notifier)
-          .hasProfileForPhone(pendingPhone);
+      await prefs.remove('pending_auth_mode');
       await ref
           .read(profileProvider.notifier)
           .loadProfileForPhone(pendingPhone);
       ref.invalidate(transactionsProvider);
 
       if (!mounted) return;
-      context.go(hasProfile ? AppRoutes.dashboard : AppRoutes.profileSetup);
+      if (authMode == 'signup') {
+        context.go(AppRoutes.profileSetup);
+      } else {
+        context.go(AppRoutes.dashboard);
+      }
     } catch (error) {
       if (mounted) {
         setState(() => _error = ApiService().errorMessage(error));
@@ -172,7 +175,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         const SizedBox(height: AppSpacing.xl),
-                        Row(
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(
                             4,
@@ -193,7 +198,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                 style: GoogleFonts.inter(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
                                 ),
+                                cursorColor: AppColors.primary,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor: AppColors.secondary,
@@ -205,6 +212,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               ),
                             ),
                           ),
+                        ),
                         ),
                         if (_error != null) ...[
                           const SizedBox(height: AppSpacing.md),

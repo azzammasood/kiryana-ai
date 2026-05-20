@@ -11,7 +11,9 @@ import '../../../core/providers/language_provider.dart';
 import '../../../routes/app_router.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  final bool isSignUp;
+
+  const LoginScreen({super.key, this.isSignUp = false});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -42,8 +44,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final user = await ApiService().createUser(phone, name: 'Dukandaar');
+      final user = await ApiService().createUser(
+        phone,
+        name: widget.isSignUp ? 'Dukandaar' : 'Kiryana Owner',
+      );
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'pending_auth_mode',
+        widget.isSignUp ? 'signup' : 'login',
+      );
       await prefs.setInt('pending_user_id', user['id'] as int);
       await prefs.setString('pending_phone_number', phone);
       if (!mounted) return;
@@ -69,7 +78,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       backgroundColor: AppColors.secondary,
       body: Column(
         children: [
-          _Header(title: isUrdu ? 'لاگ اِن' : 'Login'),
+          _Header(
+            title: widget.isSignUp
+                ? (isUrdu ? 'سائن اَپ' : 'Sign up')
+                : (isUrdu ? 'لاگ اِن' : 'Log in'),
+            onBack: () => context.go(AppRoutes.auth),
+          ),
           Expanded(
             child: Center(
               child: SingleChildScrollView(
@@ -140,8 +154,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           textDirection: TextDirection.ltr,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          cursorColor: AppColors.primary,
                           decoration: InputDecoration(
                             hintText: '03001234567',
+                            hintStyle: const TextStyle(color: AppColors.textHint),
                             filled: true,
                             fillColor: AppColors.secondary,
                             border: OutlineInputBorder(
@@ -210,8 +231,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
 class _Header extends StatelessWidget {
   final String title;
+  final VoidCallback? onBack;
 
-  const _Header({required this.title});
+  const _Header({required this.title, this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -225,6 +247,12 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (onBack != null)
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded,
+                  color: AppColors.white),
+            ),
           Image.asset('assets/images/topbar-logo.png', width: 36, height: 36),
           const SizedBox(width: 10),
           Text(

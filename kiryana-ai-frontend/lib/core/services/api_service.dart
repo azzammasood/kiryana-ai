@@ -4,40 +4,73 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import '../constants/api_endpoints.dart';
 
 class ApiService {
   static ApiService? _instance;
-  late final Dio _dio;
+  late Dio _dio;
   static final Map<int, Map<String, dynamic>> _latestInsightCache = {};
 
   ApiService._internal() {
-    _dio = Dio(
+    _dio = _createDio(ApiConfig.baseUrl);
+  }
+
+  static Dio _createDio(String baseUrl) {
+    final dio = Dio(
       BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 60),
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 90),
+        receiveTimeout: const Duration(seconds: 120),
         headers: const {
-          'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       ),
     );
-    _dio.interceptors.add(
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          // Browsers treat GET + application/json as non-simple → CORS preflight can fail.
+          if (options.method == 'GET' || options.method == 'HEAD') {
+            options.headers.remove('Content-Type');
+          } else {
+            options.headers.putIfAbsent(
+              'Content-Type',
+              () => 'application/json',
+            );
+          }
+          handler.next(options);
+        },
+      ),
+    );
+    dio.interceptors.add(
       LogInterceptor(
         requestBody: true,
         responseBody: true,
         logPrint: (obj) => debugPrint('[API] $obj'),
       ),
     );
+    return dio;
+  }
+
+  void _syncBaseUrl() {
+    final url = ApiConfig.baseUrl;
+    if (_dio.options.baseUrl != url) {
+      debugPrint('[API] Updating base URL: $url');
+      _dio.options.baseUrl = url;
+    }
   }
 
   factory ApiService() {
     _instance ??= ApiService._internal();
+    _instance!._syncBaseUrl();
     return _instance!;
   }
 
-  Dio get client => _dio;
+  Dio get client {
+    _syncBaseUrl();
+    return _dio;
+  }
 
   static Map<String, dynamic>? peekInsightCache(int userId) {
     return _latestInsightCache[userId];
@@ -78,7 +111,10 @@ class ApiService {
         return _quotaFriendlyMessage();
       }
       if (error.type == DioExceptionType.connectionError) {
-        return 'Backend se connection nahi ho raha. FastAPI server check karein.';
+        final hint = kIsWeb
+            ? 'Free Render pehli request 30–60 sec leti hai — Try Again dabayein.'
+            : 'Internet ya server check karein.';
+        return 'Backend se connection nahi ho raha (${ApiConfig.baseUrl}). $hint';
       }
       if (error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.sendTimeout) {
@@ -108,7 +144,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> createUser(String phoneNumber,
       {String name = 'Dukandaar'}) async {
-    final response = await _dio.post(ApiEndpoints.users, data: {
+    final response = await client.post(ApiEndpoints.users, data: {
       'phone_number': phoneNumber,
       'name': name,
     });
@@ -147,7 +183,7 @@ class ApiService {
 
   Future<List<dynamic>> getTransactions(int userId,
       {String filter = 'month'}) async {
-    final response = await _dio.get(
+    final response = await client.get(
       ApiEndpoints.transactionsForUser(userId),
       queryParameters: {'filter': filter},
     );
@@ -163,7 +199,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> saveTransaction(
       Map<String, dynamic> data) async {
-    final response = await _dio.post(ApiEndpoints.transactions, data: data);
+    final response = await client.post(ApiEndpoints.transactions, data: data);
     final userId = data['user_id'];
     if (userId is int) {
       clearInsightCache(userId);
@@ -188,7 +224,7 @@ class ApiService {
   }
 
   Future<void> deleteTransaction(String id) async {
-    await _dio.delete(ApiEndpoints.transactionById(id));
+    await client.delete(ApiEndpoints.transactionById(id));
   }
 
   Future<Map<String, dynamic>> processVoiceBytes({
@@ -204,7 +240,7 @@ class ApiService {
         contentType: MediaType('audio', 'webm'),
       ),
     });
-    final response = await _dio.post(
+    final response = await client.post(
       ApiEndpoints.processVoice,
       data: form,
       options: Options(
@@ -217,7 +253,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> generateInsights(int userId) async {
-    final response = await _dio.post(ApiEndpoints.generateInsights(userId));
+    final response = await client.post(ApiEndpoints.generateInsights(userId));
     final insight = Map<String, dynamic>.from(response.data as Map);
     await persistInsightCache(userId, insight);
     return insight;
@@ -226,24 +262,24 @@ class ApiService {
   Future<Map<String, dynamic>> getLatestInsight(int userId) async {
     final cached = _latestInsightCache[userId];
     if (cached != null) return cached;
-    final response = await _dio.get(ApiEndpoints.latestInsight(userId));
+    final response = await client.get(ApiEndpoints.latestInsight(userId));
     final insight = Map<String, dynamic>.from(response.data as Map);
     await persistInsightCache(userId, insight);
     return insight;
   }
 
   Future<List<dynamic>> getAgentTrace(int userId) async {
-    final response = await _dio.get(ApiEndpoints.agentTrace(userId));
+    final response = await client.get(ApiEndpoints.agentTrace(userId));
     return response.data as List<dynamic>;
   }
 
   Future<List<dynamic>> getInsightSessions(int userId) async {
-    final response = await _dio.get(ApiEndpoints.insightSessions(userId));
+    final response = await client.get(ApiEndpoints.insightSessions(userId));
     return response.data as List<dynamic>;
   }
 
   Future<List<dynamic>> getAgentTraceBySession(int userId, String sessionId) async {
-    final response = await _dio.get(ApiEndpoints.traceBySession(userId, sessionId));
+    final response = await client.get(ApiEndpoints.traceBySession(userId, sessionId));
     return response.data as List<dynamic>;
   }
 
@@ -256,7 +292,7 @@ class ApiService {
     Map<String, dynamic>? parsedPayload,
     Map<String, dynamic>? correctedPayload,
   }) async {
-    final response = await _dio.post(
+    final response = await client.post(
       ApiEndpoints.voiceFeedback,
       data: {
         'user_id': userId,
@@ -277,7 +313,7 @@ class ApiService {
     required String recommendationText,
     required bool accepted,
   }) async {
-    final response = await _dio.post(
+    final response = await client.post(
       ApiEndpoints.recommendationFeedback,
       data: {
         'user_id': userId,
@@ -290,7 +326,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getAdaptationKpis(int userId) async {
-    final response = await _dio.get(ApiEndpoints.adaptationKpis(userId));
+    final response = await client.get(ApiEndpoints.adaptationKpis(userId));
     return Map<String, dynamic>.from(response.data as Map);
   }
 
@@ -298,7 +334,7 @@ class ApiService {
     required int userId,
     required String question,
   }) async {
-    final response = await _dio.post(
+    final response = await client.post(
       ApiEndpoints.askInsight(userId),
       data: {'question': question},
     );
@@ -318,7 +354,7 @@ class ApiService {
         contentType: MediaType('audio', 'webm'),
       ),
     });
-    final response = await _dio.post(
+    final response = await client.post(
       ApiEndpoints.transcribe,
       data: form,
       options: Options(contentType: 'multipart/form-data'),
@@ -327,11 +363,11 @@ class ApiService {
   }
 
   Future<void> refineLearning(int userId) async {
-    await _dio.post(ApiEndpoints.refineLearning(userId));
+    await client.post(ApiEndpoints.refineLearning(userId));
   }
 
   Future<void> clearLearning(int userId) async {
-    await _dio.post(ApiEndpoints.clearLearning(userId));
+    await client.post(ApiEndpoints.clearLearning(userId));
   }
 
   Future<Map<String, dynamic>> getLatestInsightWithKpis(int userId) async {
@@ -344,6 +380,11 @@ class ApiService {
     Map<String, dynamic> insight;
     try {
       insight = await getLatestInsight(userId);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        rethrow;
+      }
+      insight = await generateInsights(userId);
     } catch (_) {
       insight = await generateInsights(userId);
     }
@@ -373,7 +414,7 @@ class ApiService {
         contentType: MediaType('audio', 'webm'),
       ),
     });
-    final response = await _dio.post(
+    final response = await client.post(
       ApiEndpoints.askVoice,
       data: form,
       options: Options(
@@ -386,7 +427,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> sendWhatsApp(int userId) async {
-    final response = await _dio.post(ApiEndpoints.sendWhatsApp(userId));
+    final response = await client.post(ApiEndpoints.sendWhatsApp(userId));
     return Map<String, dynamic>.from(response.data as Map);
   }
 }

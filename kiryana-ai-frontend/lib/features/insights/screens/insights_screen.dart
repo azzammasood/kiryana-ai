@@ -370,7 +370,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
   // ── Report Header ───────────────────────────────────────────────────────────
   Widget _buildReportHeader(bool isUrdu) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
       children: [
         GestureDetector(
           onTap: _sendWhatsApp,
@@ -418,6 +420,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                   color: isDark ? AppColors.white : AppColors.textPrimary),
         ),
       ],
+    ),
     );
   }
 

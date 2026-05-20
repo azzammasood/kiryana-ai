@@ -1,8 +1,7 @@
+import '../config/api_config.dart';
+
 abstract class ApiEndpoints {
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000',
-  );
+  static String get baseUrl => ApiConfig.baseUrl;
 
   static const String users = '/users/';
   static String user(int userId) => '/users/$userId';

@@ -91,7 +91,7 @@ class LatestInsightNotifier extends StateNotifier<LatestInsightState> {
           insight = {...insight, 'kpis': kpis};
         } catch (_) {}
       } else {
-        insight = await api.getLatestInsightWithKpis(userId);
+        insight = await _loadInsightWithRetry(api, userId);
       }
       await api.persistInsightCache(userId, insight);
       state = LatestInsightState(data: insight);
@@ -101,6 +101,25 @@ class LatestInsightNotifier extends StateNotifier<LatestInsightState> {
         error: ApiService().errorMessage(error),
       );
     }
+  }
+
+  Future<Map<String, dynamic>> _loadInsightWithRetry(
+    ApiService api,
+    int userId, {
+    int attempts = 3,
+  }) async {
+    Object? lastError;
+    for (var i = 0; i < attempts; i++) {
+      try {
+        return await api.getLatestInsightWithKpis(userId);
+      } catch (error) {
+        lastError = error;
+        if (i < attempts - 1) {
+          await Future<void>.delayed(Duration(seconds: 8 * (i + 1)));
+        }
+      }
+    }
+    throw lastError ?? Exception('Insights load failed');
   }
 
   void mergePatch(Map<String, dynamic> patch) {
