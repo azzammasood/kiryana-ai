@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +21,7 @@ import '../../../core/providers/latest_insight_provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../../core/widgets/animated_topbar_logo.dart';
 import '../../../../core/widgets/app_widgets.dart';
+import '../../../../core/widgets/saving_overlay.dart';
 
 class VoiceInputScreen extends ConsumerStatefulWidget {
   const VoiceInputScreen({super.key});
@@ -160,6 +163,7 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
   }
 
   Future<void> _onCorrect() async {
+    if (_isSaving) return;
     final isUrdu = ref.read(languageProvider).languageCode == 'ur';
     setState(() {
       _isSaving = true;
@@ -170,8 +174,7 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
         _parsedTransactions = [_parsedTransaction!];
       }
       final userId = await ApiService().currentUserId();
-      int? firstId;
-      for (final parsed in _parsedTransactions) {
+      final saveFutures = _parsedTransactions.map((parsed) {
         final txDate = DateTime.tryParse(
               (parsed['transaction_date'] ?? '').toString(),
             ) ??
@@ -189,22 +192,23 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
         final payload = transaction.toApiJson(userId)
           ..['raw_text'] = _transcription
           ..['audio_url'] = _audioUrl;
-        final saved = await ApiService().saveTransaction(payload);
-        firstId ??= (saved['id'] as num?)?.toInt();
-      }
-      await _submitVoiceFeedback(
-        true,
-        sourceTransactionId: firstId,
-        correctedPayload: _parsedTransactions.first,
-      );
-      final refreshed =
-          await ApiService().refreshInsightsAfterTransaction(userId);
-      if (refreshed != null) {
-        ref.read(latestInsightProvider.notifier).applyInsight(refreshed);
-      } else {
-        bumpInsightRefresh(ref);
-      }
+        return ApiService().saveTransaction(payload);
+      }).toList();
+
+      final savedRows = await Future.wait(saveFutures);
+      final firstId = (savedRows.first['id'] as num?)?.toInt();
+
       ref.invalidate(transactionsProvider);
+      bumpInsightRefresh(ref);
+
+      unawaited(
+        _submitVoiceFeedback(
+          true,
+          sourceTransactionId: firstId,
+          correctedPayload: _parsedTransactions.first,
+        ),
+      );
+      unawaited(_refreshInsightInBackground(userId));
     } catch (error) {
       if (mounted) {
         AppToast.show(context, ApiService().errorMessage(error), isError: true);
@@ -216,14 +220,24 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
     }
 
     if (!mounted) return;
+    setState(() {
+      _isSaving = false;
+    });
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.check_circle_rounded, color: AppColors.actionGreen, size: 40),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: const Icon(
+          Icons.check_circle_rounded,
+          color: AppColors.actionGreen,
+          size: 48,
+        ),
         title: Text(
-          isUrdu ? 'Log add ho gaya' : 'Log added',
+          isUrdu ? 'Log save ho gaya' : 'Log saved',
           style: const TextStyle(fontWeight: FontWeight.w800),
+          textAlign: TextAlign.center,
         ),
         content: Text(
           isUrdu
@@ -240,6 +254,16 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
       ),
     );
     if (mounted) context.go('/dashboard');
+  }
+
+  Future<void> _refreshInsightInBackground(int userId) async {
+    try {
+      final refreshed = await ApiService().refreshInsightsLight(userId);
+      if (!mounted || refreshed == null) return;
+      ref.read(latestInsightProvider.notifier).applyInsight(refreshed);
+    } catch (_) {
+      // Non-blocking background refresh.
+    }
   }
 
   Future<void> _submitVoiceFeedback(
@@ -421,7 +445,9 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
           const SizedBox(width: AppSpacing.sm),
         ],
       ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -596,7 +622,7 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
                 ),
 
                 // Bottom Actions — visible while listening OR processing (retry mic after errors)
-                if (!_isParsed && !_isSaving)
+                if (!_isParsed)
                   Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: ElevatedButton.icon(
@@ -633,20 +659,25 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
                       ),
                     ),
                   )
-                else if (_isSaving)
-                  const Padding(
-                    padding: EdgeInsets.all(AppSpacing.xl),
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  )
                 else if (_isParsed)
                   VoiceActionButtons(
-                    onCorrect: _onCorrect,
-                    onRetry: _onRetry,
+                    onCorrect: _isSaving ? () {} : _onCorrect,
+                    onRetry: _isSaving ? () {} : _onRetry,
+                    isBusy: _isSaving,
                   ),
               ],
             ),
           ),
         ),
+      ),
+          if (_isSaving)
+            SavingOverlay(
+              title: isUrdu ? 'Log save ho raha hai' : 'Saving your log',
+              subtitle: isUrdu
+                  ? 'Thori dair ruken, entry database mein likhi ja rahi hai'
+                  : 'Please wait while we save your entry',
+            ),
+        ],
       ),
     );
   }

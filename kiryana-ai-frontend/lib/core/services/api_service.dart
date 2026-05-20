@@ -218,6 +218,17 @@ class ApiService {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  /// Fast path: reload cached/latest insight + KPIs (no POST generate).
+  Future<Map<String, dynamic>?> refreshInsightsLight(int userId) async {
+    clearInsightCache(userId);
+    try {
+      final insight = await getLatestInsightWithKpis(userId);
+      return insight;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Refresh home/insights tile after a new log (generate, then fall back to latest GET).
   Future<Map<String, dynamic>?> refreshInsightsAfterTransaction(int userId) async {
     clearInsightCache(userId);
@@ -230,13 +241,7 @@ class ApiService {
       await persistInsightCache(userId, insight);
       return insight;
     } catch (_) {
-      try {
-        final insight = await getLatestInsightWithKpis(userId);
-        await persistInsightCache(userId, insight);
-        return insight;
-      } catch (_) {
-        return null;
-      }
+      return refreshInsightsLight(userId);
     }
   }
 

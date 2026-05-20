@@ -9,11 +9,13 @@ import '../../../core/providers/language_provider.dart';
 class VoiceActionButtons extends ConsumerWidget {
   final VoidCallback onCorrect;
   final VoidCallback onRetry;
+  final bool isBusy;
 
   const VoiceActionButtons({
     super.key,
     required this.onCorrect,
     required this.onRetry,
+    this.isBusy = false,
   });
 
   @override
@@ -36,7 +38,7 @@ class VoiceActionButtons extends ConsumerWidget {
               child: SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: onCorrect,
+                  onPressed: isBusy ? null : onCorrect,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.actionGreen,
                     foregroundColor: AppColors.white,
@@ -82,7 +84,7 @@ class VoiceActionButtons extends ConsumerWidget {
               child: SizedBox(
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: onRetry,
+                  onPressed: isBusy ? null : onRetry,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD32F2F),
                     side: const BorderSide(color: Color(0xFFD32F2F), width: 1.5),

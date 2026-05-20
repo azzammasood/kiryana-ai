@@ -8,6 +8,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_widgets.dart';
+import '../../../../core/widgets/feedback_thumb_button.dart';
 import '../../dashboard/widgets/custom_bottom_nav.dart';
 import '../../../../routes/app_router.dart';
 import '../../settings/providers/profile_provider.dart';
@@ -829,27 +830,18 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                       color: primaryTextColor),
             ),
           ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: () => _submitRecommendationFeedback(suggestion.textEnglish, true),
-            child: Icon(
-              Icons.thumb_up_alt_rounded,
-              size: 18,
-              color: _recommendationVotes[suggestion.textEnglish] == true
-                  ? AppColors.actionGreen
-                  : AppColors.textSecondary,
-            ),
+          const SizedBox(width: 4),
+          FeedbackThumbButton(
+            isUp: true,
+            isSelected: _recommendationVotes[suggestion.textEnglish] == true,
+            onTap: () =>
+                _submitRecommendationFeedback(suggestion.textEnglish, true),
           ),
-          const SizedBox(width: 6),
-          InkWell(
-            onTap: () => _submitRecommendationFeedback(suggestion.textEnglish, false),
-            child: Icon(
-              Icons.thumb_down_alt_rounded,
-              size: 18,
-              color: _recommendationVotes[suggestion.textEnglish] == false
-                  ? AppColors.errorReadable
-                  : AppColors.textSecondary,
-            ),
+          FeedbackThumbButton(
+            isUp: false,
+            isSelected: _recommendationVotes[suggestion.textEnglish] == false,
+            onTap: () =>
+                _submitRecommendationFeedback(suggestion.textEnglish, false),
           ),
           if (isUrdu) const SizedBox(width: 10),
           if (isUrdu)
