@@ -1,4 +1,4 @@
-# Antigravity Submission Pack — Kiryana AI
+﻿# Antigravity Submission Pack ΓÇö Kiryana AI
 
 Welcome to the **Antigravity Trace & Logs** submission package for **Google AISeekho 2026 Hackathon (Challenge 1: Autonomous Content-to-Action Agent)**.
 
@@ -6,7 +6,7 @@ This folder serves as a comprehensive, judge-ready archive demonstrating the eng
 
 ---
 
-## 📂 Submission Index
+## ≡ƒôé Submission Index
 
 Please explore the following trace logs to verify our implementation of the autonomous agent requirements:
 
@@ -21,20 +21,18 @@ Please explore the following trace logs to verify our implementation of the auto
 5. **[tool-calls.md](./tool-calls.md)**
    * *Purpose:* An exhaustive tabular trace of every external API call, database query, and cache transaction executed by our agent core.
 6. **[execution-log.md](./execution-log.md)**
-   * *Purpose:* A step-by-step chronological run log showing the agent in action—complete with detailed **Vertex AI / Redis / Twilio failure and recovery simulations**.
+   * *Purpose:* A step-by-step chronological run log showing the agent in actionΓÇöcomplete with detailed **Vertex AI / Redis / Twilio failure and recovery simulations**.
 7. **[final-outcomes.md](./final-outcomes.md)**
    * *Purpose:* Direct deployment links, system accuracy and latency KPIs, production readiness, and the vision for scaling to Pakistani markets.
 
 ---
 
-## 🛠️ The Antigravity Core Orchestrator
+## ≡ƒ¢á∩╕Å The Antigravity Core Orchestrator
 
 Kiryana AI's analytical brain is driven by a custom 7-step agent workflow implemented in:
 * `backend/services/antigravity_agent.py`
 
 This orchestrator drives the **weekly insight pipeline** (`POST /insights/generate/{user_id}`): it consumes voice-logged transactions, runs seven traced analytical steps, and compiles Roman Urdu reports and recommendations. Voice capture (`POST /voice/process`) and **Get help from AI** (`POST /voice/ask`) use `ai_voice` + `gemini_service`; thumbs-up/down feedback feeds Step 5 adaptation via `recommendation_feedback` and `voice_feedback` tables.
-
-See also **[../SUBMISSION.md](../SUBMISSION.md)** for the hackathon checklist and demo video links. 
 
 ```mermaid
 graph TD
