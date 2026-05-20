@@ -388,8 +388,10 @@ class _AgentCard extends StatelessWidget {
                   isUrdu ? agent.roleUr : agent.roleEn,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? const Color(0xFF7DD3FC)
+                        : AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -398,7 +400,9 @@ class _AgentCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: textSecondary,
+                    color: isDark
+                        ? AppColors.white.withValues(alpha: 0.88)
+                        : textSecondary,
                     height: 1.4,
                   ),
                 ),

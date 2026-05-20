@@ -49,6 +49,8 @@ class AgentTraceStep {
     text = text.replaceAll(RegExp(r'\[Errno\s+\d+\][^.]*\.?\s*', caseSensitive: false), '');
     text = text.replaceAll(RegExp(r'[A-Za-z]:\\[^\s]+'), '');
     text = text.replaceAll(RegExp(r'(?:/[\w.-]+)+\.json'), 'cloud credentials');
+    text = text.replaceAll(RegExp(r"\.json'?", caseSensitive: false), '');
+    text = text.replaceAll(RegExp(r"\bjson'?\b", caseSensitive: false), '');
     text = text.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
     return text;
   }

@@ -29,15 +29,12 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
       child: Directionality(
         textDirection: TextDirection.ltr, // Keep layout fixed
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Logo & Title
             Row(
               children: [
                 const AnimatedTopBarLogo(size: 32),
                 const SizedBox(width: AppSpacing.sm),
-                // Title
                 RichText(
                   text: TextSpan(
                     children: [
@@ -63,59 +60,63 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-
-            IconButton(
-              onPressed: () => showHowItWorksDialog(context, ref),
-              tooltip: isUrdu ? 'یہ کیسے کام کرتا ہے' : 'How it works',
-              icon: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.white.withValues(alpha: 0.12),
-                  border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.28),
+            const Spacer(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: () => showHowItWorksDialog(context, ref),
+                  tooltip: isUrdu ? 'یہ کیسے کام کرتا ہے' : 'How it works',
+                  icon: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.white.withValues(alpha: 0.12),
+                      border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.help_outline_rounded,
+                      color: AppColors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
-                child: const Icon(
-                  Icons.help_outline_rounded,
-                  color: AppColors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-
-            // Profile Picture
-            GestureDetector(
-              onTap: () => context.go('/settings'),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.secondary,
-                  border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.3),
-                    width: 2,
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => context.go('/settings'),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.secondary,
+                      border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                      image: profile.profilePicPath != null
+                          ? DecorationImage(
+                              image: kIsWeb
+                                  ? NetworkImage(profile.profilePicPath!)
+                                  : FileImage(File(profile.profilePicPath!))
+                                      as ImageProvider,
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: profile.profilePicPath == null
+                        ? Icon(
+                            Icons.person,
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                            size: 24,
+                          )
+                        : null,
                   ),
-                  image: profile.profilePicPath != null
-                      ? DecorationImage(
-                          image: kIsWeb 
-                              ? NetworkImage(profile.profilePicPath!) 
-                              : FileImage(File(profile.profilePicPath!)) as ImageProvider,
-                          fit: BoxFit.cover,
-                        )
-                      : null,
                 ),
-                child: profile.profilePicPath == null
-                    ? Icon(
-                        Icons.person,
-                        color: AppColors.primary.withValues(alpha: 0.5),
-                        size: 24,
-                      )
-                    : null,
-              ),
+              ],
             ),
           ],
         ),

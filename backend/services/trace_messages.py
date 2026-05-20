@@ -24,6 +24,8 @@ def sanitize_step_detail(detail: str) -> str:
     text = _ERRNO_RE.sub("", text)
     text = _WIN_PATH_RE.sub("", text)
     text = _UNIX_JSON_PATH_RE.sub("cloud credentials", text)
+    text = re.sub(r"\.json'?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bjson'?\b", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s{2,}", " ", text).strip()
     text = re.sub(r"\.\s*\.", ".", text)
     return text

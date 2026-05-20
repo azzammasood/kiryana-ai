@@ -202,26 +202,27 @@ class _AiLogsListScreenState extends ConsumerState<AiLogsListScreen> {
                                           color: AppColors.textPrimary,
                                         ),
                                       ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        session.sessionId.length > 12
+                                            ? '${session.sessionId.substring(0, 12)}…'
+                                            : session.sessionId,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            session.sessionId,
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: AppColors.primary,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '•  ${session.dateLabel}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
+                                      Text(
+                                        session.dateLabel,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondary,
+                                        ),
                                       ),
                                     ],
                                   ),
