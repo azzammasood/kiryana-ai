@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from models import AgentTrace, Insight, RecommendationFeedback
-from services import gemini_service, insight_engine
+from services import gemini_service, insight_engine, recommendation_i18n
 
 
 logger = logging.getLogger(__name__)
@@ -61,9 +61,15 @@ def _keywords(text: str) -> set[str]:
     return {word for word in re.findall(r"[a-zA-Z]{4,}", text.lower()) if word not in {"your", "with", "this", "that"}}
 
 
+def _recommendation_key(rec: str | dict) -> str:
+    if isinstance(rec, dict):
+        return (rec.get("en") or rec.get("ur") or "").strip()
+    return str(rec).strip()
+
+
 async def _adapt_recommendations_with_feedback(
-    user_id: int, recommendations: list[str], db: AsyncSession
-) -> tuple[list[str], dict]:
+    user_id: int, recommendations: list, db: AsyncSession
+) -> tuple[list, dict]:
     rows = (
         await db.scalars(
             select(RecommendationFeedback)
@@ -79,20 +85,21 @@ async def _adapt_recommendations_with_feedback(
     rejected = [row.recommendation_text for row in rows if not row.accepted]
     rejected_words = set().union(*[_keywords(text) for text in rejected]) if rejected else set()
 
-    adapted: list[str] = []
+    adapted: list = []
     for rec in recommendations:
-        rec_words = _keywords(rec)
-        if rec.lower() in {r.lower() for r in rejected}:
+        key = _recommendation_key(rec)
+        rec_words = _keywords(key)
+        if key.lower() in {r.lower() for r in rejected}:
             continue
         if rejected_words and rec_words and len(rec_words & rejected_words) >= 2:
             continue
-        adapted.append(rec)
+        adapted.append(rec if isinstance(rec, dict) else recommendation_i18n.normalize_recommendation(rec))
 
     for preferred in accepted:
         if len(adapted) >= 3:
             break
-        if preferred not in adapted:
-            adapted.append(preferred)
+        if not any(_recommendation_key(item).lower() == preferred.lower() for item in adapted):
+            adapted.append(recommendation_i18n.normalize_recommendation(preferred))
 
     if not adapted:
         adapted = recommendations[:3]
@@ -117,9 +124,15 @@ def _contextual_key_insight(summary: dict, generated: dict) -> str:
     return "Is hafte ka data stable raha."
 
 
-async def run_insight_workflow(user_id: int, transactions: list, db: AsyncSession) -> dict:
+async def run_insight_workflow(
+    user_id: int,
+    transactions: list,
+    db: AsyncSession,
+    language: str = "en",
+) -> dict:
     session_id = str(uuid.uuid4())
     week_start, week_end = insight_engine.current_week_range()
+    lang = (language or "en").lower()
 
     await _log_step(
         db,
@@ -158,7 +171,7 @@ async def run_insight_workflow(user_id: int, transactions: list, db: AsyncSessio
 
     generation_detail = await _try_vertex_agent("Insight Generation")
     try:
-        generated = await gemini_service.generate_insights(summary)
+        generated = await gemini_service.generate_insights(summary, language=lang)
     except Exception as exc:
         logger.warning("Gemini insight generation fallback: %s", exc)
         generated = {
@@ -176,26 +189,32 @@ async def run_insight_workflow(user_id: int, transactions: list, db: AsyncSessio
     )
 
     planning_detail = await _try_vertex_agent("Action Planning")
-    recommendations = list(generated.get("recommendations", []))[:3]
-    branch_recs = [
-        rec.get("action_urdu")
-        for rec in branch_insights.get("recommendations", [])
-        if rec.get("action_urdu")
-    ]
+    recommendations = recommendation_i18n.normalize_recommendations_list(
+        list(generated.get("recommendations", []))[:3]
+    )
+    branch_recs = branch_insights.get("recommendations", []) or []
+    seen = {row["ur"] or row["en"] for row in recommendations}
     for rec in branch_recs:
         if len(recommendations) >= 3:
             break
-        if rec not in recommendations:
-            recommendations.append(rec)
+        row = recommendation_i18n.normalize_recommendation(rec)
+        key = row["ur"] or row["en"]
+        if key and key not in seen:
+            seen.add(key)
+            recommendations.append(row)
     if anomaly:
         trend_tip = anomaly.strip()
         if trend_tip.lower().startswith("trend check:"):
             trend_tip = trend_tip.split(":", 1)[-1].strip()
-        if trend_tip and trend_tip not in recommendations:
-            recommendations = [*recommendations[:2], trend_tip][:3]
+        if trend_tip:
+            row = recommendation_i18n.normalize_recommendation(trend_tip)
+            key = row["ur"] or row["en"]
+            if key and key not in seen:
+                recommendations = [*recommendations[:2], row][:3]
     recommendations, feedback_stats = await _adapt_recommendations_with_feedback(
         user_id, recommendations, db
     )
+    recommendations = recommendation_i18n.normalize_recommendations_list(recommendations)
     await _log_step(
         db,
         user_id,

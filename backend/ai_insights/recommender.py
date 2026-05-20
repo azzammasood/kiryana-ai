@@ -9,6 +9,14 @@ import os
 
 # ── rule map ──────────────────────────────────────────────────────────────────
 
+_RULES_EN: dict[str, str] = {
+    "slow_day": "Keep stock lower on this day and avoid unnecessary purchases to save costs.",
+    "margin_shrink": "Raise the price slightly or find a cheaper supplier to protect your margin.",
+    "dead_stock": "Do not order new stock until the old stock is sold.",
+    "top_seller": "Keep this item in stock so you do not miss sales.",
+    "sales_spike": "Keep a little extra stock ready for this high-demand day.",
+}
+
 _RULES: dict[str, str] = {
     "slow_day": (
         "اس دن اسٹاک کم رکھیں اور غیر ضروری خریداری سے بچیں — خرچہ بچے گا"
@@ -83,6 +91,7 @@ def get_recommendations(patterns: list[dict]) -> list[dict]:
             "item": p.get("item"),
             "weekday": p.get("weekday"),
             "action_urdu": action,
+            "action_en": _RULES_EN.get(p["type"], ""),
             "source": source,
         })
     return recommendations

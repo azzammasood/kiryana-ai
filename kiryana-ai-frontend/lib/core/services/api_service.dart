@@ -230,10 +230,13 @@ class ApiService {
   }
 
   /// Refresh home/insights tile after a new log (generate, then fall back to latest GET).
-  Future<Map<String, dynamic>?> refreshInsightsAfterTransaction(int userId) async {
+  Future<Map<String, dynamic>?> refreshInsightsAfterTransaction(
+    int userId, {
+    String language = 'en',
+  }) async {
     clearInsightCache(userId);
     try {
-      var insight = await generateInsights(userId);
+      var insight = await generateInsights(userId, language: language);
       try {
         final kpis = await getAdaptationKpis(userId);
         insight = {...insight, 'kpis': kpis};
@@ -274,8 +277,14 @@ class ApiService {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  Future<Map<String, dynamic>> generateInsights(int userId) async {
-    final response = await client.post(ApiEndpoints.generateInsights(userId));
+  Future<Map<String, dynamic>> generateInsights(
+    int userId, {
+    String language = 'en',
+  }) async {
+    final response = await client.post(
+      ApiEndpoints.generateInsights(userId),
+      queryParameters: {'language': language},
+    );
     final insight = Map<String, dynamic>.from(response.data as Map);
     await persistInsightCache(userId, insight);
     return insight;

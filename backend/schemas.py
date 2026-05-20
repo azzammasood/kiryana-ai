@@ -80,7 +80,7 @@ class InsightResponse(BaseModel):
     profit: float
     top_items: list[dict]
     top_expenses: list[dict] = Field(default_factory=list)
-    recommendations: list[str]
+    recommendations: list[dict[str, str] | str]
     key_insight: str
     report_text: str
     kpis: dict = Field(default_factory=dict)

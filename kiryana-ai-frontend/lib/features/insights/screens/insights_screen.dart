@@ -15,6 +15,7 @@ import '../../settings/providers/profile_provider.dart';
 import '../../../core/providers/latest_insight_provider.dart';
 import '../../../core/widgets/animated_topbar_logo.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/utils/recommendation_localization.dart';
 import '../widgets/ask_ai_banner.dart';
 
 // ── Dynamic Data Models ───────────────────────────────────────────────────────
@@ -131,6 +132,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
         AppToast.show(context, ApiService().errorMessage(error), isError: true);
       }
     }
+  }
+
+  String _feedbackKey(AiSuggestion suggestion) {
+    return LocalizedRecommendation(
+      textEnglish: suggestion.textEnglish,
+      textUrdu: suggestion.textUrdu,
+    ).feedbackKey;
   }
 
   void _submitRecommendationFeedback(String recommendation, bool accepted) {
@@ -276,15 +284,22 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
 
   List<AiSuggestion> _suggestionsFromInsight() {
     final rows = (_latestInsight?['recommendations'] as List<dynamic>? ?? []);
-    return rows.take(3).map((item) {
-      final text = item.toString();
-      return AiSuggestion(
-        textUrdu: text,
-        textEnglish: text,
-        icon: Icons.trending_up_rounded,
-        iconColor: AppColors.actionGreen,
+    final isUrdu = ref.read(languageProvider).languageCode == 'ur';
+    final suggestions = <AiSuggestion>[];
+    for (final item in rows.take(3)) {
+      final localized = LocalizedRecommendation.fromDynamic(item);
+      final display = localized.displayText(isUrdu);
+      if (display.isEmpty) continue;
+      suggestions.add(
+        AiSuggestion(
+          textUrdu: localized.textUrdu,
+          textEnglish: localized.textEnglish,
+          icon: Icons.trending_up_rounded,
+          iconColor: AppColors.actionGreen,
+        ),
       );
-    }).toList();
+    }
+    return suggestions;
   }
 
   Widget _buildInsightError(bool isUrdu, String message) {
@@ -816,7 +831,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
           if (!isUrdu) const SizedBox(width: 10),
           Expanded(
             child: Text(
-              isUrdu ? suggestion.textUrdu : suggestion.textEnglish,
+              LocalizedRecommendation(
+                textEnglish: suggestion.textEnglish,
+                textUrdu: suggestion.textUrdu,
+              ).displayText(isUrdu),
               textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
               textAlign: isUrdu ? TextAlign.right : TextAlign.left,
               style: isUrdu
@@ -833,15 +851,19 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
           const SizedBox(width: 4),
           FeedbackThumbButton(
             isUp: true,
-            isSelected: _recommendationVotes[suggestion.textEnglish] == true,
-            onTap: () =>
-                _submitRecommendationFeedback(suggestion.textEnglish, true),
+            isSelected: _recommendationVotes[_feedbackKey(suggestion)] == true,
+            onTap: () => _submitRecommendationFeedback(
+              _feedbackKey(suggestion),
+              true,
+            ),
           ),
           FeedbackThumbButton(
             isUp: false,
-            isSelected: _recommendationVotes[suggestion.textEnglish] == false,
-            onTap: () =>
-                _submitRecommendationFeedback(suggestion.textEnglish, false),
+            isSelected: _recommendationVotes[_feedbackKey(suggestion)] == false,
+            onTap: () => _submitRecommendationFeedback(
+              _feedbackKey(suggestion),
+              false,
+            ),
           ),
           if (isUrdu) const SizedBox(width: 10),
           if (isUrdu)

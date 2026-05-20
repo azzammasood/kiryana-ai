@@ -248,13 +248,22 @@ Rules:
     return data
 
 
-async def generate_insights(summary: dict) -> dict:
+async def generate_insights(summary: dict, language: str = "en") -> dict:
     if settings.test_mode:
         return {
             "recommendations": [
-                "Cheeni aur atta ka stock weekend se pehle refill karein.",
-                "Kharcha daily note karein taake profit clear rahe.",
-                "Top selling items ko counter ke qareeb rakhein.",
+                {
+                    "en": "Refill sugar and flour stock before the weekend.",
+                    "ur": "Cheeni aur atta ka stock weekend se pehle refill karein.",
+                },
+                {
+                    "en": "Log expenses daily so profit stays clear.",
+                    "ur": "Kharcha daily note karein taake profit clear rahe.",
+                },
+                {
+                    "en": "Keep top-selling items near the counter.",
+                    "ur": "Top selling items ko counter ke qareeb rakhein.",
+                },
             ],
             "key_insight": "Is hafte sales expenses se zyada rahi, profit positive hai.",
             "report_text": (
@@ -264,9 +273,11 @@ async def generate_insights(summary: dict) -> dict:
             ),
         }
 
+    lang = (language or "en").lower()
     system = (
-        "You are a business advisor for small Pakistani kiryana stores. Give practical advice "
-        "in simple Urdu mixed with English. Return only valid JSON."
+        "You are a business advisor for small Pakistani kiryana stores. "
+        "Return only valid JSON. Each recommendation must include BOTH English and Urdu "
+        "(Urdu may be Roman Urdu or Urdu script)."
     )
     prompt = f'''
 Weekly data for a kiryana store:
@@ -275,12 +286,17 @@ Total Expenses: Rs. {summary["total_expenses"]}
 Net Profit: Rs. {summary["profit"]}
 Top items: {summary["top_items"]}
 All transactions: {summary["transactions_list"]}
+Preferred UI language: {lang}
 
 Return ONLY:
 {{
-  "recommendations": ["tip 1", "tip 2", "tip 3"],
-  "key_insight": "single most important observation",
-  "report_text": "4-5 sentence WhatsApp-ready Urdu summary starting with Assalam o Alaikum"
+  "recommendations": [
+    {{"en": "practical English tip", "ur": "same tip in Urdu/Roman Urdu"}},
+    {{"en": "tip 2 in English", "ur": "tip 2 in Urdu"}},
+    {{"en": "tip 3 in English", "ur": "tip 3 in Urdu"}}
+  ],
+  "key_insight": "single most important observation in {"Urdu" if lang.startswith("ur") else "English"}",
+  "report_text": "4-5 sentence WhatsApp-ready summary starting with Assalam o Alaikum"
 }}
 '''
 
@@ -295,9 +311,18 @@ Return ONLY:
     if not raw:
         return {
             "recommendations": [
-                "Top selling items ka stock daily check karein.",
-                "Expenses ko daily record karein taake profit clear rahe.",
-                "High demand items ke liye reorder point set karein.",
+                {
+                    "en": "Check top-selling item stock daily.",
+                    "ur": "Top selling items ka stock daily check karein.",
+                },
+                {
+                    "en": "Record expenses daily so profit stays clear.",
+                    "ur": "Expenses ko daily record karein taake profit clear rahe.",
+                },
+                {
+                    "en": "Set a reorder point for high-demand items.",
+                    "ur": "High demand items ke liye reorder point set karein.",
+                },
             ],
             "key_insight": "Transactions record ho gaye hain; AI response empty tha, rule-based fallback use hua.",
             "report_text": (
@@ -308,13 +333,28 @@ Return ONLY:
         }
     cleaned = _strip_json_fences(raw)
     try:
-        return json.loads(cleaned)
+        from services.recommendation_i18n import normalize_recommendations_list
+
+        data = json.loads(cleaned)
+        data["recommendations"] = normalize_recommendations_list(
+            data.get("recommendations", [])
+        )
+        return data
     except json.JSONDecodeError:
         return {
             "recommendations": [
-                "Top selling items ka stock daily check karein.",
-                "Expenses ko daily record karein taake profit clear rahe.",
-                "High demand items ke liye reorder point set karein.",
+                {
+                    "en": "Check top-selling item stock daily.",
+                    "ur": "Top selling items ka stock daily check karein.",
+                },
+                {
+                    "en": "Record expenses daily so profit stays clear.",
+                    "ur": "Expenses ko daily record karein taake profit clear rahe.",
+                },
+                {
+                    "en": "Set a reorder point for high-demand items.",
+                    "ur": "High demand items ke liye reorder point set karein.",
+                },
             ],
             "key_insight": "Transactions record ho gaye hain; AI response parse nahi hui, fallback use hua.",
             "report_text": (

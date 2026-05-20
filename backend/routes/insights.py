@@ -10,7 +10,7 @@ from sqlalchemy import delete, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AgentTrace, Insight, RecommendationFeedback, Transaction, VoiceFeedback
+from models import AgentTrace, Insight, RecommendationFeedback, Transaction, User, VoiceFeedback
 from schemas import (
     AdaptationKPIResponse,
     AgentTraceResponse,
@@ -20,7 +20,7 @@ from schemas import (
     RecommendationFeedbackCreate,
     VoiceFeedbackCreate,
 )
-from services import antigravity_agent, cache_service, gemini_service, insight_engine
+from services import antigravity_agent, cache_service, gemini_service, insight_engine, recommendation_i18n
 
 
 router = APIRouter()
@@ -94,7 +94,9 @@ def _decode_insight(row: Insight) -> dict:
         "profit": row.profit,
         "top_items": json.loads(row.top_items or "[]"),
         "top_expenses": [],
-        "recommendations": json.loads(row.recommendations or "[]"),
+        "recommendations": recommendation_i18n.normalize_recommendations_list(
+            json.loads(row.recommendations or "[]")
+        ),
         "key_insight": row.key_insight,
         "report_text": row.report_text,
         "kpis": {},
@@ -106,20 +108,17 @@ async def _fallback_insight(user_id: int, rows: list, db: AsyncSession) -> dict:
     """Rule-based insight when Gemini / Vertex workflow fails (always returns 200)."""
     summary = insight_engine.calculate_weekly_summary(rows)
     branch = insight_engine.run_branch_insights(rows)
-    recommendations: list[str] = []
+    recommendations: list = []
     for rec in branch.get("recommendations", []) or []:
-        if isinstance(rec, dict):
-            text = rec.get("action_urdu") or rec.get("action") or ""
-        else:
-            text = str(rec)
-        text = text.strip()
-        if text and text not in recommendations:
-            recommendations.append(text)
+        row = recommendation_i18n.normalize_recommendation(rec)
+        key = row["ur"] or row["en"]
+        if key and key not in {r["ur"] or r["en"] for r in recommendations}:
+            recommendations.append(row)
     if not recommendations:
-        recommendations = [
-            insight_engine.short_term_trend_observation(summary["transactions_list"])
-        ]
-    recommendations = recommendations[:3]
+        recommendations.append(
+            recommendation_i18n.trend_tip_bilingual(summary["transactions_list"])
+        )
+    recommendations = recommendation_i18n.normalize_recommendations_list(recommendations)
     week_start, week_end = insight_engine.current_week_range()
     session_id = str(uuid.uuid4())
     key_insight = insight_engine.short_term_trend_observation(summary["transactions_list"])
@@ -149,12 +148,20 @@ async def _fallback_insight(user_id: int, rows: list, db: AsyncSession) -> dict:
 
 
 @router.post("/generate/{user_id}", response_model=InsightResponse)
-async def generate_insight(user_id: int, db: AsyncSession = Depends(get_db)):
+async def generate_insight(
+    user_id: int,
+    language: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
     rows = await _week_transactions(user_id, db)
     if not rows:
         raise HTTPException(status_code=400, detail="Is hafte koi transaction record nahi hai")
+    user = await db.get(User, user_id)
+    lang = (language or (user.language if user else None) or "en").lower()
     try:
-        result = await antigravity_agent.run_insight_workflow(user_id, rows, db)
+        result = await antigravity_agent.run_insight_workflow(
+            user_id, rows, db, language=lang
+        )
     except Exception as exc:
         logger.exception("Insight workflow failed for user %s: %s", user_id, exc)
         result = await _fallback_insight(user_id, rows, db)

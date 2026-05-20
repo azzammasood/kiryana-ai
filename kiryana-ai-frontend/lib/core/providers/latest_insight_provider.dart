@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/api_service.dart';
 import 'insight_refresh_provider.dart';
+import 'language_provider.dart';
 
 class LatestInsightState {
   final Map<String, dynamic>? data;
@@ -85,7 +86,8 @@ class LatestInsightNotifier extends StateNotifier<LatestInsightState> {
       final userId = await api.currentUserId();
       Map<String, dynamic> insight;
       if (force) {
-        insight = await api.generateInsights(userId);
+        final lang = _ref.read(languageProvider).languageCode;
+        insight = await api.generateInsights(userId, language: lang);
         try {
           final kpis = await api.getAdaptationKpis(userId);
           insight = {...insight, 'kpis': kpis};
