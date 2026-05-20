@@ -15,6 +15,7 @@ import '../services/audio_picker_stub.dart'
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/insight_refresh_provider.dart';
+import '../../../core/providers/latest_insight_provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../../core/widgets/animated_topbar_logo.dart';
 import '../../../../core/widgets/app_widgets.dart';
@@ -196,8 +197,13 @@ class _VoiceInputScreenState extends ConsumerState<VoiceInputScreen>
         sourceTransactionId: firstId,
         correctedPayload: _parsedTransactions.first,
       );
-      await ApiService().refreshInsightsAfterTransaction(userId);
-      bumpInsightRefresh(ref);
+      final refreshed =
+          await ApiService().refreshInsightsAfterTransaction(userId);
+      if (refreshed != null) {
+        ref.read(latestInsightProvider.notifier).applyInsight(refreshed);
+      } else {
+        bumpInsightRefresh(ref);
+      }
       ref.invalidate(transactionsProvider);
     } catch (error) {
       if (mounted) {

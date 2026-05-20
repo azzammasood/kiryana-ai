@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import uuid
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,6 +24,7 @@ from services import antigravity_agent, cache_service, gemini_service, insight_e
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 async def _kpis(user_id: int, db: AsyncSession) -> dict:
@@ -99,21 +102,62 @@ def _decode_insight(row: Insight) -> dict:
     }
 
 
+async def _fallback_insight(user_id: int, rows: list, db: AsyncSession) -> dict:
+    """Rule-based insight when Gemini / Vertex workflow fails (always returns 200)."""
+    summary = insight_engine.calculate_weekly_summary(rows)
+    branch = insight_engine.run_branch_insights(rows)
+    recommendations: list[str] = []
+    for rec in branch.get("recommendations", []) or []:
+        if isinstance(rec, dict):
+            text = rec.get("action_urdu") or rec.get("action") or ""
+        else:
+            text = str(rec)
+        text = text.strip()
+        if text and text not in recommendations:
+            recommendations.append(text)
+    if not recommendations:
+        recommendations = [
+            insight_engine.short_term_trend_observation(summary["transactions_list"])
+        ]
+    recommendations = recommendations[:3]
+    week_start, week_end = insight_engine.current_week_range()
+    session_id = str(uuid.uuid4())
+    key_insight = insight_engine.short_term_trend_observation(summary["transactions_list"])
+    report_text = branch.get("report_text") or (
+        f"Assalam o Alaikum, is hafte bikri Rs. {summary['total_sales']:.0f}, "
+        f"kharcha Rs. {summary['total_expenses']:.0f}, aur faida Rs. {summary['profit']:.0f} raha."
+    )
+    row = Insight(
+        user_id=user_id,
+        session_id=session_id,
+        week_start=week_start,
+        week_end=week_end,
+        total_sales=summary["total_sales"],
+        total_expenses=summary["total_expenses"],
+        profit=summary["profit"],
+        top_items=json.dumps(summary["top_items"], ensure_ascii=False),
+        recommendations=json.dumps(recommendations, ensure_ascii=False),
+        key_insight=key_insight,
+        report_text=report_text,
+    )
+    db.add(row)
+    await db.flush()
+    await db.refresh(row)
+    payload = _decode_insight(row)
+    payload["top_expenses"] = summary.get("top_expenses", [])
+    return payload
+
+
 @router.post("/generate/{user_id}", response_model=InsightResponse)
 async def generate_insight(user_id: int, db: AsyncSession = Depends(get_db)):
-    today = date.today()
-    start = today - timedelta(days=today.weekday())
-    end = start + timedelta(days=6)
-    rows = (
-        await db.scalars(
-            select(Transaction)
-            .where(Transaction.user_id == user_id, Transaction.date >= start, Transaction.date <= end)
-            .order_by(Transaction.date.asc())
-        )
-    ).all()
+    rows = await _week_transactions(user_id, db)
     if not rows:
         raise HTTPException(status_code=400, detail="Is hafte koi transaction record nahi hai")
-    result = await antigravity_agent.run_insight_workflow(user_id, rows, db)
+    try:
+        result = await antigravity_agent.run_insight_workflow(user_id, rows, db)
+    except Exception as exc:
+        logger.exception("Insight workflow failed for user %s: %s", user_id, exc)
+        result = await _fallback_insight(user_id, rows, db)
     result = await _enrich_insight_payload(result, user_id, db)
     await cache_service.invalidate(f"insight:{user_id}:latest")
     return result

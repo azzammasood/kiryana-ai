@@ -35,7 +35,7 @@ class LatestInsightNotifier extends StateNotifier<LatestInsightState> {
     _bootstrap();
     _ref.listen<int>(insightRefreshProvider, (previous, next) {
       if (previous != next) {
-        reload(force: true);
+        reload();
       }
     });
   }
@@ -120,6 +120,10 @@ class LatestInsightNotifier extends StateNotifier<LatestInsightState> {
       }
     }
     throw lastError ?? Exception('Insights load failed');
+  }
+
+  void applyInsight(Map<String, dynamic> insight) {
+    state = LatestInsightState(data: insight);
   }
 
   void mergePatch(Map<String, dynamic> patch) {

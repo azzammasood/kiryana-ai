@@ -142,7 +142,11 @@ async def run_insight_workflow(user_id: int, transactions: list, db: AsyncSessio
     )
 
     anomaly_detail = await _try_vertex_agent("Anomaly Detection")
-    anomaly = await gemini_service.detect_anomalies(summary["transactions_list"])
+    try:
+        anomaly = await gemini_service.detect_anomalies(summary["transactions_list"])
+    except Exception as exc:
+        logger.warning("Anomaly detection fallback: %s", exc)
+        anomaly = insight_engine.short_term_trend_observation(summary["transactions_list"])
     await _log_step(
         db,
         user_id,
@@ -153,7 +157,15 @@ async def run_insight_workflow(user_id: int, transactions: list, db: AsyncSessio
     )
 
     generation_detail = await _try_vertex_agent("Insight Generation")
-    generated = await gemini_service.generate_insights(summary)
+    try:
+        generated = await gemini_service.generate_insights(summary)
+    except Exception as exc:
+        logger.warning("Gemini insight generation fallback: %s", exc)
+        generated = {
+            "recommendations": [],
+            "key_insight": "",
+            "report_text": "",
+        }
     await _log_step(
         db,
         user_id,

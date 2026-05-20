@@ -1,8 +1,9 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from database import engine
 from routes import insights, notifications, transactions, users, voice
@@ -34,6 +35,32 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+_CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "*",
+    "Access-Control-Allow-Headers": "*",
+}
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=_CORS_HEADERS,
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Server error. Dobara try karein."},
+        headers=_CORS_HEADERS,
+    )
+
 
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(voice.router, prefix="/voice", tags=["voice"])

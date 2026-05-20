@@ -107,14 +107,25 @@ class ApiService {
         }
         return detail;
       }
+      if (error.response?.statusCode == 404) {
+        return 'Weekly report abhi generate nahi hui. Insights par Try Again dabayein.';
+      }
       if (error.response?.statusCode == 429 || _isQuotaError(error.message)) {
         return _quotaFriendlyMessage();
       }
       if (error.type == DioExceptionType.connectionError) {
         final hint = kIsWeb
-            ? 'Free Render pehli request 30–60 sec leti hai — Try Again dabayein.'
+            ? 'Server slow ho sakta hai — Insights par Try Again dabayein.'
             : 'Internet ya server check karein.';
         return 'Backend se connection nahi ho raha (${ApiConfig.baseUrl}). $hint';
+      }
+      if (error.response?.statusCode != null && error.response!.statusCode! >= 500) {
+        final detail = error.response?.data is Map
+            ? (error.response!.data['detail']?.toString() ?? '')
+            : '';
+        return detail.isNotEmpty
+            ? detail
+            : 'Server error (${error.response!.statusCode}). Thori der baad Try Again karein.';
       }
       if (error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.sendTimeout) {
@@ -207,7 +218,7 @@ class ApiService {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  /// Regenerate weekly insight after a new log so banners/KPIs stay in sync.
+  /// Refresh home/insights tile after a new log (generate, then fall back to latest GET).
   Future<Map<String, dynamic>?> refreshInsightsAfterTransaction(int userId) async {
     clearInsightCache(userId);
     try {
@@ -219,7 +230,13 @@ class ApiService {
       await persistInsightCache(userId, insight);
       return insight;
     } catch (_) {
-      return null;
+      try {
+        final insight = await getLatestInsightWithKpis(userId);
+        await persistInsightCache(userId, insight);
+        return insight;
+      } catch (_) {
+        return null;
+      }
     }
   }
 
@@ -377,22 +394,7 @@ class ApiService {
       return cached;
     }
 
-    Map<String, dynamic> insight;
-    try {
-      insight = await getLatestInsight(userId);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        throw Exception(
-          'Pehli weekly report abhi generate nahi hui. Insights par "Try Again" dabayein.',
-        );
-      }
-      insight = await generateInsights(userId);
-    } catch (e) {
-      if (e is Exception && e.toString().contains('weekly report')) {
-        rethrow;
-      }
-      insight = await generateInsights(userId);
-    }
+    final insight = await getLatestInsight(userId);
     try {
       final kpis = await getAdaptationKpis(userId);
       insight = {...insight, 'kpis': kpis};
