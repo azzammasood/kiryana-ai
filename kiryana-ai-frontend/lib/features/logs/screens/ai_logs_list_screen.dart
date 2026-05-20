@@ -8,7 +8,9 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/services/api_service.dart';
 import '../../dashboard/widgets/custom_bottom_nav.dart';
+import '../../../core/widgets/gemini_agent_icon.dart';
 import '../models/agent_trace_model.dart';
+import '../providers/insight_sessions_provider.dart';
 import '../../settings/providers/profile_provider.dart';
 
 class AiLogsListScreen extends ConsumerStatefulWidget {
@@ -19,20 +21,10 @@ class AiLogsListScreen extends ConsumerStatefulWidget {
 }
 
 class _AiLogsListScreenState extends ConsumerState<AiLogsListScreen> {
-  late final Future<List<AgentTraceSession>> _sessionsFuture;
-
   @override
   void initState() {
     super.initState();
-    _sessionsFuture = _loadSessions();
-  }
-
-  Future<List<AgentTraceSession>> _loadSessions() async {
-    final userId = await ApiService().currentUserId();
-    final rows = await ApiService().getInsightSessions(userId);
-    return rows
-        .map((row) => AgentTraceSession.fromApi(Map<String, dynamic>.from(row as Map)))
-        .toList();
+    Future.microtask(() => ref.read(insightSessionsProvider.notifier).load());
   }
 
   void _onNavTap(BuildContext context, int index) {
@@ -47,7 +39,9 @@ class _AiLogsListScreenState extends ConsumerState<AiLogsListScreen> {
     }
   }
 
+  @override
   Widget build(BuildContext context) {
+    final sessionsState = ref.watch(insightSessionsProvider);
     final size = MediaQuery.of(context).size;
     final isWide = size.width >= AppSpacing.mobileBreakpoint;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -115,36 +109,50 @@ class _AiLogsListScreenState extends ConsumerState<AiLogsListScreen> {
             constraints: BoxConstraints(
               maxWidth: isWide ? AppSpacing.maxContentWidth : double.infinity,
             ),
-            child: FutureBuilder<List<AgentTraceSession>>(
-              future: _sessionsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      ApiService().errorMessage(snapshot.error!),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(color: AppColors.errorReadable),
-                    ),
-                  );
-                }
-                final sessions = snapshot.data ?? const <AgentTraceSession>[];
-                if (sessions.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No AI sessions yet',
-                      style: GoogleFonts.inter(color: AppColors.textSecondary),
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  itemCount: sessions.length,
-                  itemBuilder: (context, index) {
+            child: _buildBody(sessionsState),
+          ),
+        ),
+      ),
+      bottomNavigationBar: isWide
+          ? null
+          : CustomBottomNav(
+              currentIndex: 1,
+              onTap: (index) => _onNavTap(context, index),
+            ),
+    );
+  }
+
+  Widget _buildBody(InsightSessionsState sessionsState) {
+    if (sessionsState.isLoading && sessionsState.sessions.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+    if (sessionsState.error != null && sessionsState.sessions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Text(
+            sessionsState.error!,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(color: AppColors.errorReadable),
+          ),
+        ),
+      );
+    }
+    final sessions = sessionsState.sessions;
+    if (sessions.isEmpty) {
+      return Center(
+        child: Text(
+          'No AI sessions yet',
+          style: GoogleFonts.inter(color: AppColors.textSecondary),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      itemCount: sessions.length,
+      itemBuilder: (context, index) {
                     final session = sessions[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -168,27 +176,7 @@ class _AiLogsListScreenState extends ConsumerState<AiLogsListScreen> {
                             textDirection: TextDirection.ltr,
                             child: Row(
                               children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.aiPurple,
-                                        AppColors.aiBlue,
-                                        AppColors.aiPink,
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.auto_awesome_rounded,
-                                    color: AppColors.white,
-                                    size: 20,
-                                  ),
-                                ),
+                                const GeminiAgentIcon(size: 40, iconSize: 20),
                                 const SizedBox(width: AppSpacing.md),
                                 Expanded(
                                   child: Column(
@@ -235,19 +223,7 @@ class _AiLogsListScreenState extends ConsumerState<AiLogsListScreen> {
                         ),
                       ),
                     );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: isWide
-          ? null
-          : CustomBottomNav(
-              currentIndex: 1,
-              onTap: (index) => _onNavTap(context, index),
-            ),
+      },
     );
   }
 }

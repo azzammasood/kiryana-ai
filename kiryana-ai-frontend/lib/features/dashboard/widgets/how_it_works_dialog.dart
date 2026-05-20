@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/widgets/gemini_agent_icon.dart';
 
 class _AgentInfo {
   final String nameEn;
@@ -137,25 +138,7 @@ void showHowItWorksDialog(BuildContext context, WidgetRef ref) {
                 padding: const EdgeInsets.fromLTRB(20, 20, 12, 8),
                 child: Row(
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.aiPurple,
-                            AppColors.aiBlue,
-                            AppColors.aiPink,
-                          ],
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.hub_rounded,
-                        color: AppColors.white,
-                        size: 24,
-                      ),
-                    ),
+                    const GeminiAgentIcon(size: 44, iconSize: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

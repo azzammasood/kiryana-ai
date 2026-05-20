@@ -26,8 +26,9 @@ async def send_whatsapp(user_id: int, db: AsyncSession = Depends(get_db)):
     )
     if not insight:
         raise HTTPException(status_code=400, detail="Pehle report generate karen")
-    sent = whatsapp_service.send_whatsapp_message(user.phone_number, whatsapp_service.format_report_for_whatsapp(insight.__dict__))
-    return {"sent": sent, "to": user.phone_number}
+    payload = whatsapp_service.insight_to_dict(insight)
+    message = whatsapp_service.format_report_for_whatsapp(payload)
+    return whatsapp_service.send_whatsapp_message(user.phone_number, message)
 
 
 @router.put("/settings/{user_id}", response_model=NotificationSettingsResponse)

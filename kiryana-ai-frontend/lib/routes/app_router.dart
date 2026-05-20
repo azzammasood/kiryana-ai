@@ -1,6 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+CustomTransitionPage<void> _tabTransitionPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 280),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOutCubic,
+        reverseCurve: Curves.easeInOutCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.015, 0),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
 import '../features/splash/screens/splash_screen.dart';
 import '../features/onboarding/screens/onboarding_screen.dart';
 import '../features/auth/screens/login_screen.dart';
@@ -93,7 +122,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.logs,
         name: 'logs',
-        builder: (context, state) => const LogsScreen(),
+        pageBuilder: (context, state) => _tabTransitionPage(
+          state: state,
+          child: const LogsScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.aiLogs,
@@ -115,7 +147,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.dashboard,
         name: 'dashboard',
-        builder: (context, state) => const DashboardScreen(),
+        pageBuilder: (context, state) => _tabTransitionPage(
+          state: state,
+          child: const DashboardScreen(),
+        ),
       ),
 
       // ── Voice Input ─────────────────────────────────────────────
@@ -161,7 +196,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.insights,
         name: 'insights',
-        builder: (context, state) => const InsightsScreen(),
+        pageBuilder: (context, state) => _tabTransitionPage(
+          state: state,
+          child: const InsightsScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.askAiVoice,
@@ -178,7 +216,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.settings,
         name: 'settings',
-        builder: (context, state) => const SettingsScreen(),
+        pageBuilder: (context, state) => _tabTransitionPage(
+          state: state,
+          child: const SettingsScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.profileEdit,

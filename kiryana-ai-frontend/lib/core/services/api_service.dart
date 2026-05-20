@@ -11,6 +11,22 @@ class ApiService {
   static ApiService? _instance;
   late Dio _dio;
   static final Map<int, Map<String, dynamic>> _latestInsightCache = {};
+  static final Map<int, List<dynamic>> _insightSessionsCache = {};
+  static final Map<int, DateTime> _insightSessionsCachedAt = {};
+
+  static void clearInsightSessionsCache([int? userId]) {
+    if (userId == null) {
+      _insightSessionsCache.clear();
+      _insightSessionsCachedAt.clear();
+    } else {
+      _insightSessionsCache.remove(userId);
+      _insightSessionsCachedAt.remove(userId);
+    }
+  }
+
+  static List<dynamic>? peekInsightSessionsCache(int userId) {
+    return _insightSessionsCache[userId];
+  }
 
   ApiService._internal() {
     _dio = _createDio(ApiConfig.baseUrl);
@@ -287,6 +303,7 @@ class ApiService {
     );
     final insight = Map<String, dynamic>.from(response.data as Map);
     await persistInsightCache(userId, insight);
+    clearInsightSessionsCache(userId);
     return insight;
   }
 
@@ -304,9 +321,31 @@ class ApiService {
     return response.data as List<dynamic>;
   }
 
-  Future<List<dynamic>> getInsightSessions(int userId) async {
+  Future<List<dynamic>> getInsightSessions(
+    int userId, {
+    bool force = false,
+  }) async {
+    if (!force) {
+      final cached = _insightSessionsCache[userId];
+      final at = _insightSessionsCachedAt[userId];
+      if (cached != null &&
+          at != null &&
+          DateTime.now().difference(at) < const Duration(minutes: 10)) {
+        return cached;
+      }
+    }
     final response = await client.get(ApiEndpoints.insightSessions(userId));
-    return response.data as List<dynamic>;
+    final rows = response.data as List<dynamic>;
+    _insightSessionsCache[userId] = rows;
+    _insightSessionsCachedAt[userId] = DateTime.now();
+    return rows;
+  }
+
+  /// Warm cache without blocking UI (e.g. before opening AI Sessions).
+  Future<void> prefetchInsightSessions(int userId) async {
+    try {
+      await getInsightSessions(userId);
+    } catch (_) {}
   }
 
   Future<List<dynamic>> getAgentTraceBySession(int userId, String sessionId) async {

@@ -13,6 +13,7 @@ import '../widgets/time_filter_tabs.dart';
 import '../widgets/date_separator.dart';
 import '../widgets/transaction_card.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/api_service.dart';
 
 class LogGroup {
   final String date;
@@ -35,6 +36,15 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
   bool _isSearching = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      final userId = await ApiService().currentUserId();
+      await ApiService().prefetchInsightSessions(userId);
+    });
+  }
 
   @override
   void dispose() {

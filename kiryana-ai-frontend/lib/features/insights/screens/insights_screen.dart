@@ -16,6 +16,7 @@ import '../../../core/providers/latest_insight_provider.dart';
 import '../../../core/widgets/animated_topbar_logo.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/recommendation_localization.dart';
+import '../../../core/widgets/whatsapp_status_dialog.dart';
 import '../widgets/ask_ai_banner.dart';
 
 // ── Dynamic Data Models ───────────────────────────────────────────────────────
@@ -118,20 +119,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       ref.watch(latestInsightProvider).data;
 
   Future<void> _sendWhatsApp() async {
-    try {
-      final userId = await ApiService().currentUserId();
-      final result = await ApiService().sendWhatsApp(userId);
-      if (!mounted) return;
-      AppToast.show(
-          context,
-          result['sent'] == true
-              ? 'WhatsApp report bhej di gayi'
-              : 'WhatsApp send fail ho gaya');
-    } catch (error) {
-      if (mounted) {
-        AppToast.show(context, ApiService().errorMessage(error), isError: true);
-      }
-    }
+    final isUrdu = ref.read(languageProvider).languageCode == 'ur';
+    await showWhatsAppStatusDialog(
+      context: context,
+      isUrdu: isUrdu,
+      send: () async {
+        final userId = await ApiService().currentUserId();
+        return ApiService().sendWhatsApp(userId);
+      },
+    );
   }
 
   String _feedbackKey(AiSuggestion suggestion) {

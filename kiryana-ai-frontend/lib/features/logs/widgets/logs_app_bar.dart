@@ -7,6 +7,7 @@ import '../../../../core/constants/app_strings.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/widgets/animated_topbar_logo.dart';
 
 class LogsAppBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -99,8 +100,12 @@ class LogsAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         message: 'AI Sessions',
                         child: InkWell(
                           borderRadius: BorderRadius.circular(14),
-                          onTap: () {
-                            context.push('/ai-logs');
+                          onTap: () async {
+                            final userId = await ApiService().currentUserId();
+                            ApiService().prefetchInsightSessions(userId);
+                            if (context.mounted) {
+                              context.push('/ai-logs');
+                            }
                           },
                           child: Container(
                             width: 34,
