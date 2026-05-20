@@ -3,10 +3,11 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, timedelta
 import sys
-from pathlib import Path
+
+from paths import resolve_repo_root
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = resolve_repo_root()
 if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 

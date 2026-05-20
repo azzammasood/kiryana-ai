@@ -382,10 +382,15 @@ class ApiService {
       insight = await getLatestInsight(userId);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        rethrow;
+        throw Exception(
+          'Pehli weekly report abhi generate nahi hui. Insights par "Try Again" dabayein.',
+        );
       }
       insight = await generateInsights(userId);
-    } catch (_) {
+    } catch (e) {
+      if (e is Exception && e.toString().contains('weekly report')) {
+        rethrow;
+      }
       insight = await generateInsights(userId);
     }
     try {

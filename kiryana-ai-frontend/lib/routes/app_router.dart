@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/screens/splash_screen.dart';
 import '../features/onboarding/screens/onboarding_screen.dart';
-import '../features/auth/screens/auth_welcome_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/profile_setup_screen.dart';
@@ -72,15 +71,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.auth,
         name: 'auth',
-        builder: (context, state) => const AuthWelcomeScreen(),
+        redirect: (context, state) => AppRoutes.login,
       ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) {
-          final isSignUp = state.uri.queryParameters['mode'] == 'signup';
-          return LoginScreen(isSignUp: isSignUp);
-        },
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: AppRoutes.otp,

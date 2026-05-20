@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (isLoggedIn) {
         context.go('/dashboard');
       } else {
-        context.go('/auth');
+        context.go('/login');
       }
     }
   }

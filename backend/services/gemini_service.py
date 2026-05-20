@@ -13,13 +13,14 @@ import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
 from config import Settings, settings
+from paths import ai_voice_dir, resolve_repo_root
 from services import insight_engine
 
 
 logger = logging.getLogger(__name__)
 MODEL_NAME = "gemini-2.5-flash"
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = resolve_repo_root()
 if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 
@@ -150,8 +151,9 @@ async def process_voice_audio(audio_bytes: bytes, mime_type: str, audio_url: str
         normalized_mime = "audio/webm"
 
     def _call() -> dict:
-        prompts = _load_branch_module("ai_voice_prompts_direct", REPO_ROOT / "ai_voice" / "prompts.py")
-        schema = _load_branch_module("ai_voice_schema_direct", REPO_ROOT / "ai_voice" / "schema.py")
+        voice_dir = ai_voice_dir()
+        prompts = _load_branch_module("ai_voice_prompts_direct", voice_dir / "prompts.py")
+        schema = _load_branch_module("ai_voice_schema_direct", voice_dir / "schema.py")
 
         response = _model(prompts.MASTER_SYSTEM_PROMPT).generate_content(
             [
