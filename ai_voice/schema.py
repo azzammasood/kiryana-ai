@@ -114,6 +114,22 @@ class TransactionItem(BaseModel):
             )
         return self
 
+    @field_validator("transaction_type", mode="before")
+    @classmethod
+    def _coerce_transaction_type(cls, value: object) -> TransactionType:
+        if value is None or value == "":
+            return TransactionType.EXPENSE
+        if isinstance(value, TransactionType):
+            return value
+        text = str(value).lower().strip()
+        if text in ("sale", "expense", "purchase"):
+            return TransactionType(text)
+        if text in ("sell", "sold", "bechi", "becha", "bikri", "income"):
+            return TransactionType.SALE
+        if text in ("buy", "bought", "kharida", "kharcha", "purchase", "cost"):
+            return TransactionType.EXPENSE if text != "purchase" else TransactionType.PURCHASE
+        return TransactionType.EXPENSE
+
     @field_validator("quantity", mode="before")
     @classmethod
     def _coerce_quantity(cls, value: object) -> Optional[float]:

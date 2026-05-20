@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 !.env.example
+!backend/.env.example
 
 # --- Python ---
 __pycache__/
@@ -55,3 +56,35 @@ samples/
 /*.wav
 /*.m4a
 /*.flac
+
+# --- Node / Expo ---
+node_modules/
+package-lock.json.tmp
+.expo/
+expo-server*.log
+backend-server*.log
+web-server*.log
+dist/
+dist-test*/
+
+# --- GCP credentials (never commit) ---
+gcp-service-account.json
+*-service-account.json
+
+# --- Local logs ---
+*.log
+backend-prod*.log
+flutter-web-server*.log
+
+# --- Archives & design dumps ---
+KiryanaAi*.zip
+*.zip
+
+# --- Flutter build output ---
+kiryana-ai-frontend/build/
+kiryana-ai-frontend/.dart_tool/
+
+# --- Legacy Expo prototype (removed from repo) ---
+/src/
+App.js
+app.json

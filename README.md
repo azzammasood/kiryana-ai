@@ -1,101 +1,149 @@
 # KiryanaAI
 
-**Voice-first expense manager for small traders** (kiryana stores, street vendors). This repo includes the **`ai-voice`** module: upload Urdu / English / Roman-Urdu / mixed audio and receive a validated JSON payload ready for a ledger API.
+KiryanaAI is a voice-first expense manager for Pakistani kiryana store owners and street vendors. A shopkeeper speaks in Urdu, Roman Urdu, or English, and the app transcribes the audio, extracts a sale or expense, stores it, generates weekly business insights, records an agent trace, and can send the summary through WhatsApp.
 
----
+Built for Google AISeekho 2026 Hackathon, Challenge 1: Autonomous Content-to-Action Agent.
 
-## feat(ai-voice): Multimodal Urdu voice parser
+## Architecture
 
-- **Gemini 2.5 Flash** — direct **audio → structured JSON** in one multimodal call (`google-genai` SDK, `types.Part.from_bytes`).
-- **NLP extraction** — item, quantity, unit, price, transaction type (`sale` / `expense` / `purchase`), optional Urdu item name, notes, per-line and overall confidence.
-- **Edge cases** — incomplete or noisy utterances, mixed dialects and code-switching, **desi fractions** (e.g. sawa, dedh, paav), **number words** (e.g. do hazar, teen sau), missing or unknown units; low-confidence paths populate bilingual prompts.
-- **Resilience** — **exponential backoff retries** on API failures (covers transient errors such as **503** / rate limits / network blips); failures return a **safe JSON** contract with `processing_status: "failed"` and **Urdu + English** `user_friendly_message` instead of crashing callers.
-- **Contract** — **Pydantic v2** schema, **`response_mime_type: application/json`**, and **`VoiceTransactionResult.to_api_dict()`** for clean backend integration.
+```text
+Expo mobile app
+  -> FastAPI backend
+      -> Supabase PostgreSQL through async SQLAlchemy
+      -> Supabase Storage for voice clips
+      -> Gemini 1.5 Flash for transcription, parsing, insights
+      -> Vertex AI / Antigravity workflow layer for traceable orchestration
+      -> Redis cache for summaries, insights, transaction lists
+      -> Celery beat/worker for weekly WhatsApp reports
+      -> Twilio WhatsApp API
+```
 
----
+## Team Work Integrated
 
-## Requirements
+- Esha Shabbir: `ai_voice/` Urdu multimodal parser prototype.
+- Abdul Majeed: `ai_insights/` pattern detection and recommendation prototype.
+- Muhammad Usman: `kiryana-ai-frontend/` Flutter mobile prototype used as UI/flow reference.
+- Muhammad Jamil: `KiryanaAi screens.zip` UI/UX screenshots archived for design evidence.
+- Ahmad: production integration, backend API, Expo mobile app, Antigravity evidence package.
 
-- Python **3.10+**
-- [Gemini API key](https://aistudio.google.com/apikey) (`GEMINI_API_KEY`)
+## Prerequisites
 
----
+- Node.js and npm
+- Expo CLI through `npx expo`
+- Python 3.10-3.12 for the pinned backend dependencies
+- PostgreSQL or Supabase PostgreSQL
+- Redis
+- Gemini API key
+- Google Cloud project with Vertex AI enabled
+- Supabase project and storage bucket
+- Twilio WhatsApp sandbox or production sender
 
-## Quick start
+## Backend Setup
 
 ```bash
-python -m venv venv
-# Windows: venv\Scripts\activate
-# Unix:    source venv/bin/activate
-
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
+copy .env.example .env
+alembic -c alembic.ini upgrade head
+uvicorn main:app --reload
 ```
 
-Copy environment template and add your key:
+Seed demo data while the backend is running:
 
 ```bash
-cp .env.example .env.local   # or .env — both are gitignored
+python seed.py
 ```
 
-`main.py` loads `.env` first, then **`.env.local`** (overrides).
-
-### CLI (test a clip)
+Celery:
 
 ```bash
-python main.py path/to/recording.wav --pretty
-python main.py path/to/clip.ogg --context "Vegetable stall" --items "atta,chawal,doodh"
+celery -A celery_app worker --loglevel=info
+celery -A celery_app beat --loglevel=info
 ```
 
-Supported extensions include `.wav`, `.mp3`, `.ogg`, `.mp4` (audio), `.m4a`, `.flac`, `.aac`, `.webm` (see `ai_voice/engine.py`).
-
-### Library usage
-
-```python
-from ai_voice import VoiceEngine
-
-engine = VoiceEngine()  # uses GEMINI_API_KEY
-result = engine.process_audio("clips/sale.ogg", context_hint="Kiryana in Karachi")
-payload = result.to_api_dict()
-```
-
----
-
-## Tests
+## Frontend Setup
 
 ```bash
-python -m pytest tests/ -q
+npm install
+npm start
 ```
 
-Integration tests **mock** the Gemini client; no API key required for CI.
+For a physical phone, edit [src/config.js](C:/Users/LENOVO/Documents/personal/Projects/kiryana-ai-new/src/config.js) and replace `localhost` with your machine LAN IP.
 
----
+## Environment Variables
 
-## Project layout
+Backend variables live in `backend/.env`:
 
-| Path | Purpose |
-|------|---------|
-| `ai_voice/engine.py` | Gemini client, retries, audio parts, JSON parse & validate |
-| `ai_voice/prompts.py` | System prompt (dialects, fractions, units, confidence rules) |
-| `ai_voice/schema.py` | Pydantic models and `to_api_dict()` |
-| `main.py` | CLI entrypoint |
-| `tests/test_voice.py` | Schema, prompts, engine (mocked) |
-| `.env.example` | Template for `GEMINI_API_KEY` (safe to commit) |
+- `DATABASE_URL`
+- `REDIS_URL`
+- `GEMINI_API_KEY`
+- `GOOGLE_CLOUD_PROJECT`
+- `GOOGLE_CLOUD_LOCATION`
+- `GOOGLE_APPLICATION_CREDENTIALS`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_WHATSAPP_NUMBER`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_KEY`
+- `SUPABASE_AUDIO_BUCKET`
+- `TEST_MODE` optional; set `true` only for local end-to-end tests without paid external API calls.
 
----
+## Theme System
 
-## JSON output (high level)
+The Expo app uses one theme source: [src/theme/theme.js](C:/Users/LENOVO/Documents/personal/Projects/kiryana-ai-new/src/theme/theme.js). Colors, spacing, radii, icon sizes, elevation, and animation timings are centralized there.
 
-Top-level fields include: `transactions[]`, `raw_transcript`, `normalized_transcript`, `detected_language`, `confidence_score`, `processing_status`, `user_friendly_message`, `recorded_at_hint`, `processed_at`, rollup totals (`total_sales_pkr`, etc.). Each transaction includes `item_name`, `quantity`, `unit`, `price`, `transaction_type`, and more — see **`ai_voice/schema.py`** for the full contract.
+## API Endpoints
 
----
+- `GET /health` returns app health.
+- `POST /users/` body `{ phone_number, name }`, idempotently creates or returns a user.
+- `GET /users/{user_id}` returns user profile.
+- `PUT /users/{user_id}` updates `name` or `language`.
+- `POST /voice/transcribe` multipart `{ audio_file, user_id }`, uploads audio and returns transcription.
+- `POST /voice/parse` body `{ text, user_id }`, returns parsed transaction JSON.
+- `POST /transactions/` saves a transaction.
+- `GET /transactions/{user_id}?filter=today|week|month` lists transactions.
+- `GET /transactions/{user_id}/summary` returns today totals.
+- `GET /transactions/{user_id}/recent` returns last 3 transactions.
+- `DELETE /transactions/{transaction_id}` deletes one transaction.
+- `POST /insights/generate/{user_id}` runs the 7-step agent workflow.
+- `GET /insights/{user_id}/latest` returns latest insight.
+- `GET /insights/{user_id}/trace` returns latest session trace.
+- `POST /notifications/whatsapp/{user_id}` attempts WhatsApp delivery.
+- `GET /notifications/settings/{user_id}` returns notification settings.
+- `PUT /notifications/settings/{user_id}` updates notification settings.
 
-## Security & Git
+## Gemini Usage
 
-- **Never commit** `.env`, `.env.local`, or real API keys. Use `.env.example` only as a template.
-- Voice clips belong under **`clips/`** or similar; see **`.gitignore`** for ignored paths and local audio patterns.
+- Audio transcription preserves Urdu, Roman Urdu, and English exactly as spoken.
+- Transaction parsing returns strict JSON with item, quantity, unit, PKR amount, type, and confidence.
+- Weekly insights generate recommendations, key insight, and WhatsApp-ready Urdu summary.
+- Anomaly detection scans recent transaction behavior and feeds action planning.
 
----
+## Antigravity / Vertex AI Role
 
-## License / team
+KiryanaAI records an Antigravity-style agent trace for every weekly insight run:
 
-Built for **#AISeekho2026 / Antigravity Hackathon** — KiryanaAI product track. Adjust `pyproject.toml` / license as your team decides.
+1. Data Collection
+2. Pattern Recognition
+3. Anomaly Detection
+4. Insight Generation
+5. Action Planning
+6. Report Compilation
+7. Execution Complete
+
+The service initializes Vertex AI with the configured Google Cloud project. If a deployed Agent Builder runtime is not configured, it falls back to Gemini and records the fallback in `agent_traces`, so judges can see observation, reasoning, decision, action, recovery, and outcome.
+
+## Challenge 1 Mapping
+
+- Content-to-action: voice input becomes saved transaction and weekly report.
+- Agentic workflow: backend records seven explicit orchestration steps.
+- Tool/API use: Gemini, Supabase Storage/PostgreSQL, Redis, Celery, Twilio, Vertex AI initialization.
+- Visible outcome: mobile screens show saved transactions, recommendations, WhatsApp send, and trace timeline.
+- Robustness: Twilio failures return `sent: false`; Redis failures degrade gracefully; Vertex unavailable falls back to Gemini.
+- Cost/scaling: Gemini Flash keeps per-call cost low; Redis caches heavy reads; Celery batches weekly reports.
+
+## Cost and Scalability Notes
+
+Typical user flow uses one audio transcription call, one parser call, and one transaction insert. Weekly insight generation uses one anomaly call and one insight call. Redis caches dashboard reads for 3-10 minutes. For 10x/100x use, scale FastAPI workers horizontally, use managed Redis, and move Celery to a dedicated worker pool.

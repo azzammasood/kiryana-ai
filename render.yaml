@@ -1,0 +1,37 @@
+# Render Blueprint — free tier (web service may sleep when idle; fine until 25 May demo)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: kiryana-ai-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        value: redis://localhost:6379/0
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_CLOUD_PROJECT
+        sync: false
+      - key: GOOGLE_CLOUD_LOCATION
+        value: us-central1
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_AUDIO_BUCKET
+        value: kiryana-audio
+      - key: TEST_MODE
+        value: "false"

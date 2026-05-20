@@ -1,0 +1,10 @@
+# Use with Netlify Drop: upload kiryana-ai-frontend/build/web after local build.
+# For Git-connected builds, set API_BASE_URL in Netlify UI and use the build command in DEPLOYMENT.md.
+
+[build]
+  publish = "build/web"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
