@@ -37,6 +37,22 @@ class AgentTraceStep {
     }
   }
 
+  static String _sanitizeDetail(String raw) {
+    var text = raw;
+    text = text.replaceAll(
+      RegExp(
+        r'Vertex AI Agent Builder fallback used:\s*[^.]*\.?\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    text = text.replaceAll(RegExp(r'\[Errno\s+\d+\][^.]*\.?\s*', caseSensitive: false), '');
+    text = text.replaceAll(RegExp(r'[A-Za-z]:\\[^\s\']+'), '');
+    text = text.replaceAll(RegExp(r'(?:/[\w.-]+)+\.json'), 'cloud credentials');
+    text = text.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+    return text;
+  }
+
   factory AgentTraceStep.fromApi(Map<String, dynamic> data) {
     final label = (data['step_label'] ?? '').toString().toLowerCase();
     AgentStepType type;
@@ -56,7 +72,7 @@ class AgentTraceStep {
     return AgentTraceStep(
       stepNumber: (data['step_number'] as num?)?.toInt() ?? 0,
       title: (data['step_label'] ?? 'Step').toString(),
-      detail: (data['step_detail'] ?? '').toString(),
+      detail: _sanitizeDetail((data['step_detail'] ?? '').toString()),
       status: (data['status'] ?? 'success').toString(),
       timeLabel: timeLabel,
       type: type,

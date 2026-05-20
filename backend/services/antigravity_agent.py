@@ -5,14 +5,16 @@ import logging
 import re
 import uuid
 
-from google.cloud import aiplatform
-from google.oauth2 import service_account
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
 from models import AgentTrace, Insight, RecommendationFeedback
 from services import gemini_service, insight_engine, recommendation_i18n
+from services.trace_messages import (
+    action_planning_detail,
+    anomaly_detection_detail,
+    insight_generation_detail,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -38,23 +40,6 @@ async def _log_step(
         )
     )
     await db.flush()
-
-
-async def _try_vertex_agent(step_name: str) -> str:
-    try:
-        credentials = service_account.Credentials.from_service_account_file(
-            settings.google_application_credentials,
-            scopes=["https://www.googleapis.com/auth/cloud-platform"],
-        )
-        aiplatform.init(
-            project=settings.google_cloud_project,
-            location=settings.google_cloud_location,
-            credentials=credentials,
-        )
-        raise RuntimeError("Vertex AI Agent Builder runtime endpoint is not configured for this prototype")
-    except Exception as exc:
-        logger.info("Vertex AI fallback for %s: %s", step_name, exc)
-        return f"Vertex AI Agent Builder fallback used: {exc}"
 
 
 def _keywords(text: str) -> set[str]:
@@ -154,7 +139,6 @@ async def run_insight_workflow(
         f"Computing totals with ai-insights branch rules. Patterns found: {len(branch_insights.get('patterns', []))}",
     )
 
-    anomaly_detail = await _try_vertex_agent("Anomaly Detection")
     try:
         anomaly = await gemini_service.detect_anomalies(summary["transactions_list"])
     except Exception as exc:
@@ -166,10 +150,9 @@ async def run_insight_workflow(
         session_id,
         3,
         "Anomaly Detection",
-        f"Scanning for unusual sales patterns. {anomaly_detail}. Observation: {anomaly or 'No major anomaly found.'}",
+        anomaly_detection_detail(anomaly),
     )
 
-    generation_detail = await _try_vertex_agent("Insight Generation")
     try:
         generated = await gemini_service.generate_insights(summary, language=lang)
     except Exception as exc:
@@ -185,10 +168,8 @@ async def run_insight_workflow(
         session_id,
         4,
         "Insight Generation",
-        f"Generating AI-powered business recommendations. {generation_detail}",
+        insight_generation_detail(len(generated.get("recommendations", []))),
     )
-
-    planning_detail = await _try_vertex_agent("Action Planning")
     recommendations = recommendation_i18n.normalize_recommendations_list(
         list(generated.get("recommendations", []))[:3]
     )
@@ -221,9 +202,11 @@ async def run_insight_workflow(
         session_id,
         5,
         "Action Planning",
-        "Structuring recommendations into actionable steps. "
-        f"{planning_detail}. Adapted with feedback "
-        f"(accepted={feedback_stats['accepted_samples']}, rejected={feedback_stats['rejected_samples']}).",
+        action_planning_detail(
+            len(recommendations),
+            feedback_stats["accepted_samples"],
+            feedback_stats["rejected_samples"],
+        ),
     )
 
     report_text = generated.get("report_text") or branch_insights.get("report_text") or (

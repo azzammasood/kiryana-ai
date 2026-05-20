@@ -21,6 +21,7 @@ from schemas import (
     VoiceFeedbackCreate,
 )
 from services import antigravity_agent, cache_service, gemini_service, insight_engine, recommendation_i18n
+from services.trace_messages import sanitize_step_detail
 
 
 router = APIRouter()
@@ -230,7 +231,19 @@ async def latest_trace(user_id: int, db: AsyncSession = Depends(get_db)):
             .order_by(AgentTrace.step_number.asc())
         )
     ).all()
-    return rows
+    return _trace_responses(rows)
+
+
+def _trace_responses(rows: list[AgentTrace]) -> list[AgentTraceResponse]:
+    responses: list[AgentTraceResponse] = []
+    for row in rows:
+        payload = AgentTraceResponse.model_validate(row)
+        responses.append(
+            payload.model_copy(
+                update={"step_detail": sanitize_step_detail(payload.step_detail)}
+            )
+        )
+    return responses
 
 
 @router.get("/{user_id}/trace/{session_id}", response_model=list[AgentTraceResponse])
@@ -244,7 +257,7 @@ async def trace_by_session(user_id: int, session_id: str, db: AsyncSession = Dep
     ).all()
     if not rows:
         raise HTTPException(status_code=404, detail="Trace abhi available nahi")
-    return rows
+    return _trace_responses(rows)
 
 
 @router.post("/feedback/voice")
