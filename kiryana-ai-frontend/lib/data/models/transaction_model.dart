@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/transaction_item_visual.dart';
+
 /// Represents a single transaction or log entry in the KiryanaAI system.
 @immutable
 class TransactionModel {
@@ -57,6 +59,7 @@ class TransactionModel {
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     if (json.containsKey('item_name')) {
       final itemName = (json['item_name'] ?? '').toString();
+      final displayEnglish = toTitleCase(itemName);
       final quantity = json['quantity'];
       final unit = json['unit'];
       final dateValue = (json['date'] ?? json['created_at']).toString();
@@ -64,7 +67,7 @@ class TransactionModel {
       return TransactionModel(
         id: json['id'].toString(),
         titleUrdu: itemName,
-        titleEnglish: itemName,
+        titleEnglish: displayEnglish,
         tag: quantity == null ? '-' : '$quantity ${unit ?? ''}'.trim(),
         date: DateTime.parse(dateValue),
         amount: ((json['amount'] as num?) ?? 0).round(),

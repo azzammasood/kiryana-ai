@@ -49,17 +49,18 @@ class _WhatsAppStatusDialogState extends State<_WhatsAppStatusDialog> {
       final result = await widget.send();
       if (!mounted) return;
       final sent = result['sent'] == true;
+      final detail = (result['detail'] ?? '').toString();
+      final to = (result['to'] ?? '').toString();
       setState(() {
         _phase = sent ? WhatsAppDialogPhase.success : WhatsAppDialogPhase.failed;
-        _detail = (result['detail'] ?? '').toString();
         if (sent) {
-          final to = (result['to'] ?? '').toString();
-          final extra = (result['detail'] ?? '').toString();
-          if (extra.isNotEmpty) {
-            _detail = extra;
-          } else if (to.isNotEmpty) {
-            _detail = to;
-          }
+          _detail = detail.isNotEmpty ? detail : to;
+        } else {
+          _detail = detail.isNotEmpty
+              ? detail
+              : (result['sandbox'] == true
+                  ? 'Twilio sandbox: join from your WhatsApp first (send join code to +1 415 523 8886).'
+                  : 'Message could not be delivered.');
         }
       });
       if (sent) {

@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 from typing import Any
 
 from twilio.rest import Client
@@ -10,6 +11,32 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
+
+_SANDBOX_HINT = (
+    "Twilio WhatsApp Sandbox: open WhatsApp and send the join code to +1 415 523 8886 "
+    "from the same number (+92…) before reports can arrive."
+)
+
+
+def _is_sandbox_sender() -> bool:
+    from_number = (settings.twilio_whatsapp_number or "").replace(" ", "")
+    return "14155238886" in from_number or "4155238886" in from_number
+
+
+def _poll_delivery(sid: str, attempts: int = 8, delay: float = 1.0):
+    last = None
+    for _ in range(attempts):
+        last = client.messages(sid).fetch()
+        status = (last.status or "").lower()
+        if status in ("delivered", "read", "sent"):
+            return last, status, None
+        if status in ("failed", "undelivered"):
+            code = getattr(last, "error_code", None)
+            message = getattr(last, "error_message", None) or ""
+            return last, status, (code, message)
+        time.sleep(delay)
+    status = (getattr(last, "status", None) or "queued").lower()
+    return last, status, None
 
 
 def _digits_only(phone: str) -> str:
@@ -132,25 +159,34 @@ def send_whatsapp_message(to_number: str, message: str) -> dict:
             to=formatted,
             body=message,
         )
-        status = getattr(msg, "status", None)
-        error = getattr(msg, "error_message", None)
+        sid = getattr(msg, "sid", None)
+        polled, status, error_info = _poll_delivery(sid) if sid else (msg, getattr(msg, "status", None), None)
+        status = (status or getattr(msg, "status", None) or "").lower()
         detail = ""
-        if error:
-            detail = str(error)
+        sent = status not in ("failed", "undelivered")
+        sandbox = _is_sandbox_sender()
+
+        if error_info:
+            code, err_msg = error_info
+            detail = str(err_msg or code or status)
+            if str(code) == "63015" or "63015" in detail or "sandbox" in detail.lower():
+                detail = _SANDBOX_HINT
+            sent = False
         elif status in ("failed", "undelivered"):
             detail = f"Twilio status: {status}"
-        elif "sandbox" in (settings.twilio_whatsapp_number or "").lower():
-            detail = (
-                "Twilio sandbox: send the join code from your WhatsApp to the sandbox number first."
-            )
+            sent = False
+        elif sandbox and status in ("queued", "sending", "accepted"):
+            detail = _SANDBOX_HINT
+            sent = False
 
         return {
-            "sent": status not in ("failed", "undelivered"),
+            "sent": sent,
             "to": display,
             "to_formatted": formatted,
-            "sid": getattr(msg, "sid", None),
+            "sid": sid,
             "status": status,
             "detail": detail,
+            "sandbox": sandbox,
         }
     except Exception as exc:
         logger.error("WhatsApp send failed to %s: %s", formatted, exc)

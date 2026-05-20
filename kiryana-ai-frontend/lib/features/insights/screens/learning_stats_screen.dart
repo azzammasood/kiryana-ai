@@ -7,6 +7,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/providers/latest_insight_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/widgets/animated_bulb_indicator.dart';
 import '../../../core/widgets/app_widgets.dart';
 
 class LearningStatsScreen extends ConsumerStatefulWidget {
@@ -194,19 +195,7 @@ class _LearningStatsScreenState extends ConsumerState<LearningStatsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.35),
-            ),
-            child: const Icon(
-              Icons.lightbulb_rounded,
-              color: Color(0xFF5D4037),
-              size: 30,
-            ),
-          ),
+          const AnimatedBulbIndicator(size: 48),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

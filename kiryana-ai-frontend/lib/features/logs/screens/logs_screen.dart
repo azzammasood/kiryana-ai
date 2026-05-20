@@ -14,6 +14,7 @@ import '../widgets/date_separator.dart';
 import '../widgets/transaction_card.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/widgets/shimmer_box.dart';
 
 class LogGroup {
   final String date;
@@ -311,29 +312,32 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Row(
                 children: [
-                  Container(
+                  const ShimmerBox(
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                      shape: BoxShape.circle,
-                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(24)),
+                    baseColor: Color(0xFF2F5A61),
+                    highlightColor: Color(0xFF4F8A92),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
+                        ShimmerBox(
                           width: double.infinity,
                           height: 16,
-                          color: AppColors.border.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(6),
+                          baseColor: const Color(0xFF2F5A61),
+                          highlightColor: const Color(0xFF4F8A92),
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          width: 100,
+                        ShimmerBox(
+                          width: 120,
                           height: 12,
-                          color: AppColors.border.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(6),
+                          baseColor: const Color(0xFF2F5A61),
+                          highlightColor: const Color(0xFF4F8A92),
                         ),
                       ],
                     ),

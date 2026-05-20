@@ -128,16 +128,8 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Get help from AI',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.white : AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
+                    const Center(child: GeminiSparkleIndicator(size: 120)),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       'AI can help answer your questions — profit, stock, expenses, or shop planning.',
                       textAlign: TextAlign.center,

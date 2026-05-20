@@ -490,4 +490,27 @@ class ApiService {
     final response = await client.post(ApiEndpoints.sendWhatsApp(userId));
     return Map<String, dynamic>.from(response.data as Map);
   }
+
+  Future<Map<String, dynamic>> getNotificationSettings(int userId) async {
+    final response = await client.get(ApiEndpoints.notificationSettings(userId));
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> updateNotificationSettings({
+    required int userId,
+    String? notificationDay,
+    String? notificationTime,
+    bool? notificationsEnabled,
+  }) async {
+    final response = await client.put(
+      ApiEndpoints.notificationSettings(userId),
+      data: {
+        if (notificationDay != null) 'notification_day': notificationDay,
+        if (notificationTime != null) 'notification_time': notificationTime,
+        if (notificationsEnabled != null)
+          'notifications_enabled': notificationsEnabled,
+      },
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
 }

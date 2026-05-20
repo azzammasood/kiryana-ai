@@ -15,6 +15,7 @@ import '../../../core/providers/language_provider.dart';
 import '../../../../core/services/api_service.dart';
 import '../../logs/providers/transaction_provider.dart';
 import '../../../core/widgets/animated_topbar_logo.dart';
+import '../widgets/whatsapp_schedule_sheet.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -26,6 +27,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final int _currentIndex = 3;
   bool _isWhatsAppEnabled = true;
+  String _notificationDay = 'Sunday';
+  String _notificationTime = '10:00';
 
   @override
   void initState() {
@@ -38,6 +41,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {
       _isWhatsAppEnabled = prefs.getBool('whatsapp') ?? true;
     });
+    try {
+      final userId = await ApiService().currentUserId();
+      final remote = await ApiService().getNotificationSettings(userId);
+      if (!mounted) return;
+      setState(() {
+        _notificationDay =
+            (remote['notification_day'] ?? _notificationDay).toString();
+        _notificationTime =
+            (remote['notification_time'] ?? _notificationTime).toString();
+        _isWhatsAppEnabled = remote['notifications_enabled'] == true ||
+            (remote['notifications_enabled'] == null && _isWhatsAppEnabled);
+      });
+      await prefs.setBool('whatsapp', _isWhatsAppEnabled);
+    } catch (_) {}
+  }
+
+  String _whatsappScheduleSubtitle(bool isUrdu) {
+    if (!_isWhatsAppEnabled) {
+      return isUrdu ? 'رپورٹ بند ہے' : 'Reports off';
+    }
+    final shortDay = _notificationDay.length >= 3
+        ? _notificationDay.substring(0, 3)
+        : _notificationDay;
+    return isUrdu
+        ? '$shortDay ${_notificationTime} بجے'
+        : 'Every $shortDay at $_notificationTime';
+  }
+
+  Future<void> _openWhatsAppScheduler(bool isUrdu) async {
+    final result = await showWhatsAppScheduleSheet(
+      context: context,
+      isUrdu: isUrdu,
+      initialDay: _notificationDay,
+      initialTime: _notificationTime,
+      notificationsEnabled: _isWhatsAppEnabled,
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _notificationDay = result.day;
+      _notificationTime = result.time;
+      _isWhatsAppEnabled = result.enabled;
+    });
+    await _saveSetting('whatsapp', result.enabled);
+    try {
+      final userId = await ApiService().currentUserId();
+      await ApiService().updateNotificationSettings(
+        userId: userId,
+        notificationDay: result.day,
+        notificationTime: result.time,
+        notificationsEnabled: result.enabled,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ApiService().errorMessage(error))),
+        );
+      }
+    }
   }
 
   Future<void> _saveSetting(String key, bool value) async {
@@ -422,28 +483,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             customTrailing: _buildLanguageToggle(),
           ),
           _buildDivider(),
-          _buildSettingRow(
-            isUrdu: isUrdu,
-            titleUrdu: 'واٹس ایپ رپورٹ',
-            titleEnglish: 'WhatsApp Report',
-            subtitleUrdu: 'روزانہ کی رپورٹ موصول کریں',
-            subtitleEnglish: 'Receive daily reports',
-            icon: Icons.chat_rounded,
-            customTrailing: Switch(
-              value: _isWhatsAppEnabled,
-              onChanged: (val) {
-                setState(() => _isWhatsAppEnabled = val);
-                _saveSetting('whatsapp', val);
-              },
-              activeTrackColor: const Color(0xFF1B6D24),
-              activeThumbColor: AppColors.white,
-              inactiveTrackColor: AppColors.border,
-              inactiveThumbColor: AppColors.white,
-              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-              thumbIcon: WidgetStateProperty.all(
-                  const Icon(Icons.circle, color: Colors.transparent)),
-            ),
-          ),
+          _buildWhatsAppScheduleRow(isUrdu),
           _buildDivider(),
           _buildSettingRow(
             isUrdu: isUrdu,
@@ -507,6 +547,112 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () {},
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWhatsAppScheduleRow(bool isUrdu) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final secondaryTextColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _openWhatsAppScheduler(isUrdu),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE8F8EE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Image.asset(
+                            'assets/images/whatsapp-icon.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isUrdu ? 'واٹس ایپ رپورٹ' : 'WhatsApp Report',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: primaryTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _whatsappScheduleSubtitle(isUrdu),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: secondaryTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isUrdu
+                                  ? 'شیڈول تبدیل کرنے کے لیے ٹیپ کریں'
+                                  : 'Tap to set day & time',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Switch(
+              value: _isWhatsAppEnabled,
+              onChanged: (val) async {
+                setState(() => _isWhatsAppEnabled = val);
+                await _saveSetting('whatsapp', val);
+                try {
+                  final userId = await ApiService().currentUserId();
+                  await ApiService().updateNotificationSettings(
+                    userId: userId,
+                    notificationsEnabled: val,
+                  );
+                } catch (_) {}
+              },
+              activeTrackColor: const Color(0xFF25D366),
+              activeThumbColor: AppColors.white,
+              inactiveTrackColor: AppColors.border,
+              inactiveThumbColor: AppColors.white,
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+          ],
+        ),
       ),
     );
   }
