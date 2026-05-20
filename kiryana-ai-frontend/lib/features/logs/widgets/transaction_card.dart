@@ -32,6 +32,7 @@ class TransactionCard extends ConsumerWidget {
         isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final visual = visualForTransaction(
       titleEnglish: item.titleEnglish,
+      titleUrdu: item.titleUrdu,
       isSale: item.isSale,
     );
     final displayTitle =

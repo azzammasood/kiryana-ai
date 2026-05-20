@@ -29,9 +29,10 @@ String toTitleCase(String value) {
 
 TransactionItemVisual visualForTransaction({
   required String titleEnglish,
+  String titleUrdu = '',
   required bool isSale,
 }) {
-  final title = titleEnglish.toLowerCase();
+  final title = '${titleEnglish.toLowerCase()} ${titleUrdu.toLowerCase()}';
 
   if (title.contains('atta') || title.contains('flour') || title.contains('maida')) {
     return const TransactionItemVisual(
@@ -51,14 +52,16 @@ TransactionItemVisual visualForTransaction({
       iconColor: Color(0xFF6A1B9A),
     );
   }
-  if (title.contains('cheeni') ||
+  if (title.contains('chini') ||
+      title.contains('cheeni') ||
       title.contains('sugar') ||
+      title.contains('shakkar') ||
       title.contains('gur')) {
     return const TransactionItemVisual(
-      emoji: '🧂',
-      icon: Icons.cookie_rounded,
-      backgroundColor: Color(0xFFE8F5E9),
-      iconColor: Color(0xFF2E7D32),
+      emoji: '🍬',
+      icon: Icons.cake_rounded,
+      backgroundColor: Color(0xFFFFF8E1),
+      iconColor: Color(0xFFE91E63),
     );
   }
   if (title.contains('doodh') ||
