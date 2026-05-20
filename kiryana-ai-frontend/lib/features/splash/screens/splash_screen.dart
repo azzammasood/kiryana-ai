@@ -15,49 +15,77 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _logoFade;
-  late final Animation<double> _logoScale;
-  late final Animation<double> _taglineFade;
-  late final Animation<Offset> _taglineSlide;
+    with TickerProviderStateMixin {
+  static const _enterDuration = Duration(milliseconds: 1000);
+  static const _exitDuration = Duration(milliseconds: 550);
+  static const _holdDuration = Duration(milliseconds: 1500);
+
+  late final AnimationController _enterController;
+  late final AnimationController _exitController;
+
+  late final Animation<double> _logoEnterFade;
+  late final Animation<double> _logoEnterScale;
+  late final Animation<double> _taglineEnterFade;
+  late final Animation<Offset> _taglineEnterSlide;
+
+  late final Animation<double> _exitFade;
+  late final Animation<double> _exitScale;
+  late final Animation<Offset> _exitSlide;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _enterController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: _enterDuration,
+    );
+    _exitController = AnimationController(
+      vsync: this,
+      duration: _exitDuration,
     );
 
-    _logoFade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.55, curve: Curves.easeOut),
+    _logoEnterFade = CurvedAnimation(
+      parent: _enterController,
+      curve: const Interval(0.0, 0.72, curve: Curves.easeInOutCubic),
     );
 
-    _logoScale = Tween<double>(begin: 0.88, end: 1.0).animate(
+    _logoEnterScale = Tween<double>(begin: 0.94, end: 1.0).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
+        parent: _enterController,
+        curve: const Interval(0.0, 0.78, curve: Curves.easeOutCubic),
       ),
     );
 
-    _taglineFade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.42, 1.0, curve: Curves.easeIn),
+    _taglineEnterFade = CurvedAnimation(
+      parent: _enterController,
+      curve: const Interval(0.32, 0.88, curve: Curves.easeInOutCubic),
     );
 
-    _taglineSlide = Tween<Offset>(
-      begin: const Offset(0, 0.12),
+    _taglineEnterSlide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.42, 1.0, curve: Curves.easeOutCubic),
+        parent: _enterController,
+        curve: const Interval(0.32, 0.88, curve: Curves.easeOutCubic),
       ),
     );
 
-    _controller.forward();
+    _exitFade = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInOutCubic),
+    );
+
+    _exitScale = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInOutCubic),
+    );
+
+    _exitSlide = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -0.04),
+    ).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInOutCubic),
+    );
+
     _checkSession();
   }
 
@@ -65,9 +93,15 @@ class _SplashScreenState extends State<SplashScreen>
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
 
-    await Future<void>.delayed(const Duration(milliseconds: 2200));
-
+    await _enterController.forward();
     if (!mounted) return;
+
+    await Future<void>.delayed(_holdDuration);
+    if (!mounted) return;
+
+    await _exitController.forward();
+    if (!mounted) return;
+
     if (isLoggedIn) {
       context.go('/dashboard');
     } else {
@@ -77,7 +111,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _enterController.dispose();
+    _exitController.dispose();
     super.dispose();
   }
 
@@ -86,42 +121,61 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FadeTransition(
-                opacity: _logoFade,
-                child: ScaleTransition(
-                  scale: _logoScale,
-                  child: Image.asset(
-                    'assets/images/splashLogo.png',
-                    width: 200,
-                    fit: BoxFit.contain,
-                  ),
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_enterController, _exitController]),
+          builder: (context, child) {
+            final exitFade = _exitFade.value;
+            final exitScale = _exitScale.value;
+            final exitSlide = _exitSlide.value;
+
+            return FadeTransition(
+              opacity: AlwaysStoppedAnimation(exitFade),
+              child: Transform.scale(
+                scale: exitScale,
+                child: Transform.translate(
+                  offset: Offset(0, exitSlide.dy * 24),
+                  child: child,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              FadeTransition(
-                opacity: _taglineFade,
-                child: SlideTransition(
-                  position: _taglineSlide,
-                  child: Text(
-                    'آپ کی دکان کا سمارٹ ساتھی',
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.white.withValues(alpha: 0.92),
-                      height: 1.5,
-                      letterSpacing: 0.2,
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FadeTransition(
+                  opacity: _logoEnterFade,
+                  child: ScaleTransition(
+                    scale: _logoEnterScale,
+                    child: Image.asset(
+                      'assets/images/splashLogo.png',
+                      width: 200,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.xl),
+                FadeTransition(
+                  opacity: _taglineEnterFade,
+                  child: SlideTransition(
+                    position: _taglineEnterSlide,
+                    child: Text(
+                      'آپ کی دکان کا سمارٹ ساتھی',
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.white.withValues(alpha: 0.92),
+                        height: 1.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
