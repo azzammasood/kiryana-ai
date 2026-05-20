@@ -104,7 +104,7 @@ const _agents = [
   ),
 ];
 
-Future<void> showHowItWorksDialog(BuildContext context, WidgetRef ref) {
+void showHowItWorksDialog(BuildContext context, WidgetRef ref) {
   final isUrdu = ref.read(languageProvider).languageCode == 'ur';
 
   showDialog<void>(
