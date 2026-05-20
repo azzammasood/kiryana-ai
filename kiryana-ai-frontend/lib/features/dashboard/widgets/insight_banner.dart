@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/providers/latest_insight_provider.dart';
+import '../../../core/utils/insight_text_localization.dart';
 
 class InsightBanner extends ConsumerWidget {
   final String? urduText;
@@ -38,7 +39,7 @@ class InsightBanner extends ConsumerWidget {
         : (insightState.showFullScreenLoader
             ? 'Loading live AI advice...'
             : 'Generate a report to see live AI advice here.');
-    final text = live.isEmpty ? fallback : live;
+    final text = live.isEmpty ? fallback : localizedKeyInsight(live, isUrdu);
 
     return _bannerBody(isUrdu, text);
   }

@@ -647,7 +647,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             Expanded(
               child: Text(
                 isUrdu
-                    ? 'Learning Accuracy ${parseAccuracy.toStringAsFixed(1)}%'
+                    ? 'سیکھنے کی درستگی ${parseAccuracy.toStringAsFixed(1)}%'
                     : 'Learning Accuracy ${parseAccuracy.toStringAsFixed(1)}%',
                 style: GoogleFonts.inter(
                   fontSize: 13,

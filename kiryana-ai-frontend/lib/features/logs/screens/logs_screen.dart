@@ -139,32 +139,28 @@ class _LogsScreenState extends ConsumerState<LogsScreen> {
                                               : AppColors.textHint)
                                           .withValues(alpha: 0.5)),
                                   const SizedBox(height: 16),
-                                  if (isUrdu)
-                                    Text(
-                                      'کوئی انٹری نہیں ملی',
-                                      textDirection: TextDirection.rtl,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark
-                                            ? AppColors.white
-                                            : AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  if (isUrdu) const SizedBox(height: 4),
                                   Text(
-                                    'No transactions found.',
-                                    style: GoogleFonts.inter(
-                                      fontSize: isUrdu ? 13 : 18,
-                                      fontWeight: isUrdu
-                                          ? FontWeight.w500
-                                          : FontWeight.w700,
-                                      color: isDark
-                                          ? AppColors.white
-                                          : (isUrdu
-                                              ? AppColors.textHint
-                                              : AppColors.textSecondary),
-                                    ),
+                                    isUrdu
+                                        ? 'کوئی انٹری نہیں ملی'
+                                        : 'No transactions found.',
+                                    textDirection:
+                                        isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                                    textAlign: TextAlign.center,
+                                    style: isUrdu
+                                        ? TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? AppColors.white
+                                                : AppColors.textSecondary,
+                                          )
+                                        : GoogleFonts.inter(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? AppColors.white
+                                                : AppColors.textSecondary,
+                                          ),
                                   ),
                                 ],
                               ),

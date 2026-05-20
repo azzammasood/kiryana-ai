@@ -57,23 +57,73 @@ class _LearningStatsScreenState extends ConsumerState<LearningStatsScreen> {
     }
   }
 
-  Future<void> _refine() async {
+  Future<void> _confirmRefine(bool isUrdu) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.darkCard : AppColors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            isUrdu ? 'AI سے سیکھنے کو بہتر بنائیں؟' : 'Refine learning with AI?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            isUrdu
+                ? 'آپ کے voice feedback اور thumbs up/down سے AI دوبارہ patterns سمجھے گا اور اگلی تجاویز بہتر بنائے گا۔'
+                : 'AI will re-read your voice feedback and thumbs, update shop patterns, and improve future suggestions.',
+            style: GoogleFonts.inter(height: 1.45, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(isUrdu ? 'منسوخ' : 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+              ),
+              child: Text(isUrdu ? 'بہتر بنائیں' : 'Refine'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    await _refine(isUrdu);
+  }
+
+  Future<void> _refine(bool isUrdu) async {
     try {
       final userId = await ApiService().currentUserId();
       await ApiService().refineLearning(userId);
       await _load(silent: _kpis.isNotEmpty);
-      if (mounted) AppToast.show(context, 'Learning refined');
+      if (mounted) {
+        AppToast.show(
+          context,
+          isUrdu ? 'سیکھنے کو بہتر بنا دیا گیا' : 'Learning refined',
+        );
+      }
     } catch (error) {
       if (mounted) AppToast.show(context, ApiService().errorMessage(error), isError: true);
     }
   }
 
   Future<void> _clear() async {
+    final isUrdu = ref.read(languageProvider).languageCode == 'ur';
     try {
       final userId = await ApiService().currentUserId();
       await ApiService().clearLearning(userId);
       await _load(silent: _kpis.isNotEmpty);
-      if (mounted) AppToast.show(context, 'Learning cleared');
+      if (mounted) {
+        AppToast.show(
+          context,
+          isUrdu ? 'سیکھنا صاف کر دیا گیا' : 'Learning cleared',
+        );
+      }
     } catch (error) {
       if (mounted) AppToast.show(context, ApiService().errorMessage(error), isError: true);
     }
@@ -137,28 +187,45 @@ class _LearningStatsScreenState extends ConsumerState<LearningStatsScreen> {
                   ),
                   const Spacer(),
                   ElevatedButton.icon(
-                    onPressed: _refine,
-                    icon: const Icon(Icons.lightbulb_rounded),
-                    label: const Text('Refine Learning with AI'),
+                    onPressed: () => _confirmRefine(isUrdu),
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 22),
+                    label: Text(
+                      isUrdu
+                          ? 'AI سے سیکھنے کو بہتر بنائیں'
+                          : 'Refine Learning with AI',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 52),
+                      minimumSize: const Size(double.infinity, 54),
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: _clear,
-                    icon: const Icon(Icons.delete_outline_rounded),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 22),
                     label: Text(
-                      'Clear Current Learning',
-                      style: TextStyle(color: textSecondary),
+                      isUrdu ? 'موجودہ سیکھنا صاف کریں' : 'Clear Current Learning',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 52),
+                      minimumSize: const Size(double.infinity, 54),
                       foregroundColor: AppColors.errorReadable,
-                      side: BorderSide(
-                        color: AppColors.errorReadable.withValues(alpha: 0.5),
+                      backgroundColor: AppColors.errorReadable.withValues(alpha: 0.08),
+                      side: const BorderSide(color: AppColors.errorReadable, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),

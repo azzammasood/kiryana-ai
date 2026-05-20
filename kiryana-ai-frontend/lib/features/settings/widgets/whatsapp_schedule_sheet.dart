@@ -20,12 +20,14 @@ Future<({String day, String time, bool enabled})?> showWhatsAppScheduleSheet({
   required String initialTime,
   required bool notificationsEnabled,
 }) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   return showModalBottomSheet<({String day, String time, bool enabled})>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => _WhatsAppScheduleSheet(
       isUrdu: isUrdu,
+      isDark: isDark,
       initialDay: initialDay,
       initialTime: initialTime,
       notificationsEnabled: notificationsEnabled,
@@ -35,12 +37,14 @@ Future<({String day, String time, bool enabled})?> showWhatsAppScheduleSheet({
 
 class _WhatsAppScheduleSheet extends StatefulWidget {
   final bool isUrdu;
+  final bool isDark;
   final String initialDay;
   final String initialTime;
   final bool notificationsEnabled;
 
   const _WhatsAppScheduleSheet({
     required this.isUrdu,
+    required this.isDark,
     required this.initialDay,
     required this.initialTime,
     required this.notificationsEnabled,
@@ -88,8 +92,9 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primary,
+              brightness: widget.isDark ? Brightness.dark : Brightness.light,
             ),
           ),
           child: child!,
@@ -104,12 +109,24 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
   @override
   Widget build(BuildContext context) {
     final isUrdu = widget.isUrdu;
+    final isDark = widget.isDark;
+    final surface = isDark ? AppColors.darkCard : AppColors.white;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final chipBg = isDark ? AppColors.primaryLight : AppColors.secondary;
+    final chipSelected = const Color(0xFF25D366);
+
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(24),
+        border: isDark
+            ? Border.all(color: AppColors.darkBorder.withValues(alpha: 0.55))
+            : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -129,13 +146,13 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded),
+                icon: Icon(Icons.close_rounded, color: textSecondary),
               ),
             ],
           ),
@@ -146,7 +163,7 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
                 : 'Choose which day and time to receive your weekly report.',
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: textSecondary,
               height: 1.4,
             ),
           ),
@@ -155,10 +172,21 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
             contentPadding: EdgeInsets.zero,
             title: Text(
               isUrdu ? 'رپورٹ فعال' : 'Reports enabled',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                color: textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              isUrdu
+                  ? 'بند کرنے پر شیڈول محفوظ رہے گا'
+                  : 'Schedule is kept when turned off',
+              style: GoogleFonts.inter(fontSize: 12, color: textSecondary),
             ),
             value: _enabled,
             activeTrackColor: const Color(0xFF25D366),
+            activeThumbColor: AppColors.white,
+            inactiveTrackColor: AppColors.border,
             onChanged: (v) => setState(() => _enabled = v),
           ),
           const SizedBox(height: 8),
@@ -166,7 +194,7 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
             isUrdu ? 'دن' : 'Day of week',
             style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -180,10 +208,16 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
                 label: Text(short),
                 selected: selected,
                 onSelected: (_) => setState(() => _selectedDay = day),
-                selectedColor: const Color(0xFF25D366).withValues(alpha: 0.25),
+                backgroundColor: chipBg,
+                selectedColor: chipSelected.withValues(alpha: 0.35),
                 labelStyle: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
-                  color: selected ? AppColors.primary : AppColors.textSecondary,
+                  color: selected ? textPrimary : textSecondary,
+                ),
+                side: BorderSide(
+                  color: selected
+                      ? chipSelected
+                      : (isDark ? AppColors.darkBorder : AppColors.border),
                 ),
               );
             }).toList(),
@@ -193,7 +227,7 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
             isUrdu ? 'وقت' : 'Time',
             style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -203,20 +237,22 @@ class _WhatsAppScheduleSheetState extends State<_WhatsAppScheduleSheet> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: AppColors.secondary,
+                color: chipBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.schedule_rounded, color: AppColors.primary),
+                  Icon(Icons.schedule_rounded, color: textPrimary),
                   const SizedBox(width: 12),
                   Text(
                     _formatTime(_selectedTime),
                     style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                      color: textPrimary,
                     ),
                   ),
                   const Spacer(),

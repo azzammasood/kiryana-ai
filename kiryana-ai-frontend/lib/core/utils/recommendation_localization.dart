@@ -1,5 +1,12 @@
 final _arabicScript = RegExp(r'[\u0600-\u06FF]');
 
+bool _looksEnglish(String text) {
+  final letters = text.split('').where((ch) => RegExp(r'[A-Za-z]').hasMatch(ch));
+  if (letters.isEmpty) return false;
+  final latin = letters.where((ch) => ch.codeUnitAt(0) < 128).length;
+  return latin / letters.length >= 0.85 && !_arabicScript.hasMatch(text);
+}
+
 class LocalizedRecommendation {
   final String textEnglish;
   final String textUrdu;
@@ -15,15 +22,22 @@ class LocalizedRecommendation {
 
   String displayText(bool isUrdu) {
     if (isUrdu) {
-      return textUrdu.trim().isNotEmpty ? textUrdu.trim() : textEnglish.trim();
+      final ur = textUrdu.trim();
+      final en = textEnglish.trim();
+      if (ur.isNotEmpty && _arabicScript.hasMatch(ur)) return ur;
+      if (en.isNotEmpty && _arabicScript.hasMatch(en)) return en;
+      if (ur.isNotEmpty && !_looksEnglish(ur)) return ur;
+      if (en.isNotEmpty && !_looksEnglish(en)) return en;
+      return '';
     }
     if (textEnglish.trim().isNotEmpty) {
       return textEnglish.trim();
     }
     final ur = textUrdu.trim();
     if (ur.isEmpty) return '';
-    if (_arabicScript.hasMatch(ur)) return '';
-    return ur;
+    if (_arabicScript.hasMatch(ur)) return ur;
+    if (!_looksEnglish(ur)) return ur;
+    return '';
   }
 
   static LocalizedRecommendation fromDynamic(dynamic item) {

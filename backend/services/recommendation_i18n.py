@@ -74,6 +74,29 @@ def _english_for_urdu_text(ur: str, pattern_type: str | None = None) -> str:
     return "Review this week's sales and stock based on your latest logs."
 
 
+def _to_urdu_script(text: str) -> str:
+    """Prefer Urdu script for Urdu-mode UI when text is Roman Urdu."""
+    if not text or _ARABIC_RE.search(text):
+        return text
+    lower = text.lower()
+    if "ab tak sab se zyada bikne wali cheez" in lower:
+        item = text.split(" ab tak")[0].strip()
+        amount = re.search(r"Rs\.?\s*([0-9.,]+)", text)
+        amt = amount.group(1) if amount else "0"
+        return f"{item} اب تک سب سے زیادہ بکنے والی چیز ہے (Rs. {amt})۔ اس کا اسٹاک زیادہ رکھیں۔"
+    if "pehle din se aakhri din tak bikri barh rahi" in lower:
+        return "پہلے دن سے آخری دن تک فروخت بڑھ رہی ہے۔ اس رجحان کو برقرار رکھیں۔"
+    if "bikri pehle din se kam ho rahi" in lower:
+        return "فروخت پہلے دن سے کم ہو رہی ہے۔ کاؤنٹر ڈسپلے اور ریٹ بورڈ چیک کریں۔"
+    if "do din ki bikri barabar" in lower:
+        return "دو دن کی فروخت برابر ہے — ٹاپ آئٹمز کا اسٹاک تیار رکھیں۔"
+    if "abhi kam entries hain" in lower:
+        return "ابھی کم انٹریز ہیں — روزانہ آواز سے فروخت/خرچ لاگ کریں تاکہ رجحان واضح ہو۔"
+    if "rozana" in lower and "voice" in lower:
+        return "روزانہ 2–3 وائس انٹریز سے ایک ہفتے میں مضبوط رجحان بنے گا۔"
+    return text
+
+
 def normalize_recommendation(item: str | dict) -> dict[str, str]:
     if isinstance(item, dict):
         ur = (
@@ -98,7 +121,9 @@ def normalize_recommendation(item: str | dict) -> dict[str, str]:
     if ur and not en:
         en = _english_for_urdu_text(ur, pattern_type)
     if en and not ur:
-        ur = en
+        ur = _to_urdu_script(en) if not _looks_english(en) else en
+    if ur and not _ARABIC_RE.search(ur):
+        ur = _to_urdu_script(ur)
     if not ur and not en:
         ur = en = ""
 

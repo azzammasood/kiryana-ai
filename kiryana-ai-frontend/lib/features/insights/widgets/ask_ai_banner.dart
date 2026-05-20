@@ -46,7 +46,7 @@ class AskAiBanner extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Get help from AI',
+                isUrdu ? 'AI سے مدد' : 'Get help from AI',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,

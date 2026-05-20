@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/providers/language_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../../core/widgets/gemini_sparkle_indicator.dart';
@@ -24,11 +25,23 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
   String _answer = '';
   String? _hintQuestion;
 
-  static const List<String> _suggestedQuestions = [
-    'Is hafte munafa kaise barhayein?',
-    'Pehle kin items ka stock refill karein?',
-    'Kharcha sales se zyada kyun hai?',
-    'Kal subah shop par kya focus karein?',
+  static const List<({String en, String ur})> _suggestedQuestions = [
+    (
+      en: 'How can I increase profit this week?',
+      ur: 'اس ہفتے منافع کیسے بڑھائیں؟',
+    ),
+    (
+      en: 'Which items should I restock first?',
+      ur: 'پہلے کن اشیاء کا اسٹاک بھریں؟',
+    ),
+    (
+      en: 'Why are expenses higher than sales?',
+      ur: 'خرچ فروخت سے زیادہ کیوں ہے؟',
+    ),
+    (
+      en: 'What should I focus on tomorrow morning?',
+      ur: 'کل صبح دکان پر کیا focus کریں؟',
+    ),
   ];
 
   @override
@@ -99,6 +112,7 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isUrdu = ref.watch(languageProvider).languageCode == 'ur';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.primary : AppColors.secondary;
     const cardBg = AppColors.white;
@@ -106,6 +120,7 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
     const cardBodyColor = Color(0xFF374151);
     final subtitleColor =
         isDark ? AppColors.white.withValues(alpha: 0.78) : AppColors.textSecondary;
+    final titleColor = isDark ? AppColors.white : AppColors.primary;
     final showAnswers = _transcript.isNotEmpty || _answer.isNotEmpty;
 
     return Scaffold(
@@ -113,7 +128,7 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
-        title: const Text('Get help from AI'),
+        title: Text(isUrdu ? 'AI سے مدد' : 'Get help from AI'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -128,64 +143,67 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Center(child: GeminiSparkleIndicator(size: 120)),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      'AI can help answer your questions — profit, stock, expenses, or shop planning.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        height: 1.45,
-                        color: subtitleColor,
-                      ),
-                    ),
-                    if (_hintQuestion != null) ...[
-                      const SizedBox(height: 12),
+                    if (_loading) ...[
+                      const Center(child: GeminiSparkleIndicator(size: 140)),
+                      const SizedBox(height: AppSpacing.md),
                       Text(
-                        _hintQuestion!,
+                        isUrdu
+                            ? 'Gemini آپ کا جواب تیار کر رہا ہے...'
+                            : 'Gemini is preparing your answer...',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.white : AppColors.primary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: subtitleColor,
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 60),
-                    if (_loading)
-                      Column(
-                        children: [
-                          const GeminiSparkleIndicator(size: 150),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'Gemini is preparing your answer...',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: subtitleColor,
-                            ),
-                          ),
-                        ],
-                      )
-                    else if (!showAnswers)
-                      const Center(child: GeminiSparkleIndicator(size: 150)),
-                    if (showAnswers) ...[
-                      const SizedBox(height: 24),
+                    ] else if (showAnswers) ...[
                       if (_transcript.isNotEmpty)
-                        _card('Aap ne poocha', _transcript, cardBg, cardTitleColor, cardBodyColor),
+                        _card(
+                          isUrdu ? 'آپ نے پوچھا' : 'You asked',
+                          _transcript,
+                          cardBg,
+                          cardTitleColor,
+                          cardBodyColor,
+                        ),
                       if (_answer.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        _card('AI ka jawab', _answer, cardBg, cardTitleColor, cardBodyColor),
+                        _card(
+                          isUrdu ? 'AI کا جواب' : 'AI answer',
+                          _answer,
+                          cardBg,
+                          cardTitleColor,
+                          cardBodyColor,
+                        ),
                       ],
-                    ],
-                    if (!showAnswers && !_loading) ...[
-                      const SizedBox(height: 28),
+                    ] else ...[
                       Text(
-                        'Suggested sawalat',
+                        isUrdu ? 'AI سے مدد' : 'Get help from AI',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        isUrdu ? 'AI se madad lein' : 'AI se madad lein',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: subtitleColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      const Center(child: GeminiSparkleIndicator(size: 130)),
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        isUrdu ? 'تجویز کردہ سوالات' : 'Suggested sawalat',
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.white : AppColors.textPrimary,
+                          color: titleColor,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -193,10 +211,11 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: _suggestedQuestions.map((q) {
-                          final selected = _hintQuestion == q;
+                          final label = isUrdu ? q.ur : q.en;
+                          final selected = _hintQuestion == label;
                           return ActionChip(
-                            label: Text(q),
-                            onPressed: () => setState(() => _hintQuestion = q),
+                            label: Text(label),
+                            onPressed: () => setState(() => _hintQuestion = label),
                             backgroundColor: selected
                                 ? AppColors.actionGreen.withValues(alpha: 0.2)
                                 : (isDark
@@ -223,8 +242,10 @@ class _AskAiVoiceScreenState extends ConsumerState<AskAiVoiceScreen> {
                 icon: Icon(_recording ? Icons.stop_circle : Icons.mic_rounded),
                 label: Text(
                   _loading
-                      ? 'Processing...'
-                      : (_recording ? 'Done' : 'Speak'),
+                      ? (isUrdu ? 'پروسیسنگ...' : 'Processing...')
+                      : (_recording
+                          ? (isUrdu ? 'مکمل' : 'Done')
+                          : (isUrdu ? 'بولیں' : 'Speak')),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 style: ElevatedButton.styleFrom(
