@@ -1,6 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../features/splash/screens/splash_screen.dart';
+import '../features/onboarding/screens/onboarding_screen.dart';
+import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/otp_screen.dart';
+import '../features/auth/screens/profile_setup_screen.dart';
+import '../features/dashboard/screens/dashboard_screen.dart';
+import '../features/voice/screens/voice_input_screen.dart';
+import '../features/logs/screens/logs_screen.dart';
+import '../features/logs/screens/ai_system_logs_screen.dart';
+import '../features/logs/screens/ai_logs_list_screen.dart';
+import '../features/logs/screens/manual_entry_screen.dart';
+import '../features/insights/screens/insights_screen.dart';
+import '../features/insights/screens/ask_ai_voice_screen.dart';
+import '../features/insights/screens/learning_stats_screen.dart';
+import '../features/settings/screens/settings_screen.dart';
+import '../features/settings/screens/profile_edit_screen.dart';
+import '../features/settings/screens/change_phone_screen.dart';
 
 CustomTransitionPage<void> _tabTransitionPage({
   required GoRouterState state,
@@ -30,23 +47,6 @@ CustomTransitionPage<void> _tabTransitionPage({
     },
   );
 }
-import '../features/splash/screens/splash_screen.dart';
-import '../features/onboarding/screens/onboarding_screen.dart';
-import '../features/auth/screens/login_screen.dart';
-import '../features/auth/screens/otp_screen.dart';
-import '../features/auth/screens/profile_setup_screen.dart';
-import '../features/dashboard/screens/dashboard_screen.dart';
-import '../features/voice/screens/voice_input_screen.dart';
-import '../features/logs/screens/logs_screen.dart';
-import '../features/logs/screens/ai_system_logs_screen.dart';
-import '../features/logs/screens/ai_logs_list_screen.dart';
-import '../features/logs/screens/manual_entry_screen.dart';
-import '../features/insights/screens/insights_screen.dart';
-import '../features/insights/screens/ask_ai_voice_screen.dart';
-import '../features/insights/screens/learning_stats_screen.dart';
-import '../features/settings/screens/settings_screen.dart';
-import '../features/settings/screens/profile_edit_screen.dart';
-import '../features/settings/screens/change_phone_screen.dart';
 
 /// App route names — use these constants for navigation, never raw strings.
 abstract class AppRoutes {
