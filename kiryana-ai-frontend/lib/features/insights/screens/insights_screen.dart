@@ -251,6 +251,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     );
   }
 
+  // ignore: unused_element
   List<TopSellingItem> _topItemsFromInsight() {
     final sales = (_latestInsight?['top_items'] as List<dynamic>? ?? []);
     final expenses = (_latestInsight?['top_expenses'] as List<dynamic>? ?? []);
@@ -265,9 +266,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
         nameEnglish: name,
         qtyUrdu: isExpenseView ? 'Kharcha Rs. $amount' : 'Rs. $amount',
         qtyEnglish: isExpenseView ? 'Expense Rs. $amount' : 'Rs. $amount',
-        icon: isExpenseView ? Icons.receipt_long_rounded : Icons.inventory_2_rounded,
-        iconColor: isExpenseView ? const Color(0xFFD32F2F) : AppColors.actionGreen,
-        iconBg: isExpenseView ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9),
+        icon: isExpenseView
+            ? Icons.receipt_long_rounded
+            : Icons.inventory_2_rounded,
+        iconColor:
+            isExpenseView ? const Color(0xFFD32F2F) : AppColors.actionGreen,
+        iconBg:
+            isExpenseView ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9),
       );
     }).toList();
   }
@@ -280,12 +285,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
 
   List<AiSuggestion> _suggestionsFromInsight() {
     final rows = (_latestInsight?['recommendations'] as List<dynamic>? ?? []);
-    final isUrdu = ref.read(languageProvider).languageCode == 'ur';
     final suggestions = <AiSuggestion>[];
     for (final item in rows.take(3)) {
       final localized = LocalizedRecommendation.fromDynamic(item);
-      final display = localized.displayText(isUrdu);
-      if (display.isEmpty) continue;
+      if (localized.textEnglish.trim().isEmpty &&
+          localized.textUrdu.trim().isEmpty) {
+        continue;
+      }
       suggestions.add(
         AiSuggestion(
           textUrdu: localized.textUrdu,
@@ -385,58 +391,60 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Row(
-      children: [
-        GestureDetector(
-          onTap: _sendWhatsApp,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(20),
-              border: isDark
-                  ? Border.all(
-                      color: AppColors.white.withValues(alpha: 0.3), width: 0.5)
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'assets/images/whatsapp-icon.png',
-                  width: 22,
-                  height: 22,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  isUrdu ? 'واٹس ایپ پہ بھیجو' : 'Share on WhatsApp',
-                  style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.white),
-                ),
-              ],
+        children: [
+          GestureDetector(
+            onTap: _sendWhatsApp,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+                border: isDark
+                    ? Border.all(
+                        color: AppColors.white.withValues(alpha: 0.3),
+                        width: 0.5)
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/whatsapp-icon.png',
+                    width: 22,
+                    height: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isUrdu ? 'واٹس ایپ پہ بھیجو' : 'Share on WhatsApp',
+                    style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const Spacer(),
-        Text(
-          isUrdu ? 'ہفتہ وار رپورٹ' : 'Weekly Report',
-          style: isUrdu
-              ? TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.white : AppColors.textPrimary)
-              : GoogleFonts.inter(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.white : AppColors.textPrimary),
-        ),
-      ],
-    ),
+          const Spacer(),
+          Text(
+            isUrdu ? 'ہفتہ وار رپورٹ' : 'Weekly Report',
+            style: isUrdu
+                ? TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.white : AppColors.textPrimary)
+                : GoogleFonts.inter(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.white : AppColors.textPrimary),
+          ),
+        ],
+      ),
     );
   }
 
   // ── Top Selling Items ───────────────────────────────────────────────────────
+  // ignore: unused_element
   Widget _buildTopSellingSection(bool isUrdu, List<TopSellingItem> topItems) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkCard : AppColors.white;
@@ -476,7 +484,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               if (!isUrdu) const SizedBox(width: 6),
               Text(
                 _showingExpenseItems
-                    ? (isUrdu ? 'Top Expenses (No sales yet)' : 'Top Expenses (No sales yet)')
+                    ? (isUrdu
+                        ? 'Top Expenses (No sales yet)'
+                        : 'Top Expenses (No sales yet)')
                     : (isUrdu ? 'ٹاپ سیلنگ آئٹمز' : 'Top Selling Items'),
                 style: isUrdu
                     ? TextStyle(
@@ -605,8 +615,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
 
   // ── AI Suggestions ──────────────────────────────────────────────────────────
   Widget _buildLearningBadge(bool isUrdu) {
-    final kpis = Map<String, dynamic>.from(_latestInsight?['kpis'] as Map? ?? const {});
-    final parseAccuracy = ((kpis['voice_parse_accuracy_pct'] as num?) ?? 0).toDouble();
+    final kpis =
+        Map<String, dynamic>.from(_latestInsight?['kpis'] as Map? ?? const {});
+    final parseAccuracy =
+        ((kpis['voice_parse_accuracy_pct'] as num?) ?? 0).toDouble();
 
     return InkWell(
       onTap: () => context.push(AppRoutes.learningStats),
@@ -663,9 +675,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildAdaptationKpis(bool isUrdu) {
-    final kpis = Map<String, dynamic>.from(_latestInsight?['kpis'] as Map? ?? const {});
-    final parseAccuracy = ((kpis['voice_parse_accuracy_pct'] as num?) ?? 0).toDouble();
+    final kpis =
+        Map<String, dynamic>.from(_latestInsight?['kpis'] as Map? ?? const {});
+    final parseAccuracy =
+        ((kpis['voice_parse_accuracy_pct'] as num?) ?? 0).toDouble();
     final recommendationAcceptance =
         ((kpis['recommendation_acceptance_pct'] as num?) ?? 0).toDouble();
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -687,7 +702,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.white.withValues(alpha: 0.85) : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.white.withValues(alpha: 0.85)
+                        : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -715,11 +732,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isUrdu ? 'Recommendation Acceptance' : 'Recommendation Acceptance',
+                  isUrdu
+                      ? 'Recommendation Acceptance'
+                      : 'Recommendation Acceptance',
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.white.withValues(alpha: 0.85) : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.white.withValues(alpha: 0.85)
+                        : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 6),
